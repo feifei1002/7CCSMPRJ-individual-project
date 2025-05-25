@@ -28,7 +28,7 @@
  'call_llm_for_uncovered_targets=False, coverage_threshold=1, '
  'call_llm_on_stall_detection=False, max_plateau_len=25, '
  'max_llm_interventions=1), '
- 'seeding=SeedingConfiguration(seed=1748205688298782800, '
+ 'seeding=SeedingConfiguration(seed=1748208556361374900, '
  'constant_seeding=True, initial_population_seeding=False, '
  "initial_population_data='', seeded_testcases_reuse_probability=0.9, "
  'initial_population_mutations=0, dynamic_constant_seeding=True, '

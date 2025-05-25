@@ -5,4 +5,6 @@ import python_code as module_0
 
 def test_case_0():
     bool_0 = False
-    module_0.list_speech_synthesis_tasks(bool_0)
+    float_0 = -540.0
+    set_0 = {bool_0, bool_0, float_0, bool_0}
+    module_0.listSpeechSynthesisTasks(set_0)

@@ -1,60 +1,13 @@
 import os
 import re
 import subprocess
-from os import mkdir
-
 from mistralai import Mistral
 from datasets import load_dataset
-#
-# ds = load_dataset("openai/openai_humaneval")
-#
-#
+
+
 api_key = os.environ["MISTRAL_API_KEY"]
-#
 client = Mistral(api_key=api_key)
-#
 model = "codestral-mamba-latest"
-#
-# prompt = ("Translate this code from Python to Java. "
-#           "def convert(minutes): \n return minutes * 60\n")
-#
-# tests = ("import org.junit.Test;\n"
-#          "import static org.junit.Assert.assertEquals;\n"
-#          "public class ChallengeTests {\n"
-#          "@Test\n"
-#          "public void test1() {\n"
-#             "assertEquals(360, Challenge.convert(6));\n"
-#          "}\n"
-#
-# 	     "@Test\n"
-#          "public void test2() {\n"
-#             "assertEquals(240, Challenge.convert(4));\n"
-#          "}\n"
-#
-# 	     "@Test\n"
-#          "public void test3() {\n"
-#             "assertEquals(480, Challenge.convert(8));\n"
-#          "}\n"
-#
-# 	     "@Test\n"
-#          "public void test4() {\n"
-#             "assertEquals(3600, Challenge.convert(60));\n"
-#          "}\n"
-#         "}")
-#
-# message = [
-#     {
-#         "role": "system",
-#         "content": f"You are a programmer expert in Python and Java, and here is your task: {prompt} "
-#                    f"Your code should pass these tests:\n\n{tests}\n"
-#     }
-# ]
-#
-# chat_response = client.chat.complete(
-#     model=model,
-#     messages=message,
-# )
-# print(chat_response.choices[0].message.content)
 
 class CodeTransPrompt:
     system_prompt = (
@@ -91,17 +44,20 @@ class CodeTransPrompt:
         ]
 
 # Extract the code from the translated response
-def extract_python_code(translated_code, module_name="python_code"):
+def extract_python_code(translated_code):
     pattern = r"```python\s*(.*?)\s*```"
     match = re.search(pattern, translated_code, re.DOTALL)
-    extracted_code = match.group(1) if match else None
+    return match.group(1) if match else None
+
+# Generate Pynguin tests for the extracted Python code
+def generate_pynguin_tests(extracted_code, module_name="python_code"):
     project_dir = os.getcwd()
     python_code_path = os.path.join(project_dir, f"{module_name}.py")
-    print(python_code_path)
+    # write the extracted code to a Python file
     with open(python_code_path, "w") as f:
         f.write(extracted_code)
 
-
+    # execute Pynguin to generate tests
     test_dir = os.path.join(project_dir, "pynguin-report")
     os.makedirs(test_dir, exist_ok=True)
     subprocess.run([
@@ -110,9 +66,6 @@ def extract_python_code(translated_code, module_name="python_code"):
         "--output-path", test_dir,
         "--module-name", module_name,
         "-v"], check=True)
-    # with open(test_file, "w") as tf:
-    #     tf.write(pynguin_tests)
-    #     return pynguin_tests, extracted_code
 
 source_language = "Java"
 target_language = "Python"
@@ -130,4 +83,5 @@ for example in dataset:
 
     chat_response = client.chat.complete(model=model, messages=prompt_messages)
     translated_python_code = chat_response.choices[0].message.content.strip()
-    extract_python_code(translated_python_code)
+    python_code = extract_python_code(translated_python_code)
+    generate_pynguin_tests(python_code)

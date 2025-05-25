@@ -1,7 +1,0 @@
-You are an expert in code translation. Translate the following Python code to Java.
-
-Here is the Python code:
-
-START_CODE_BLOCK
-{code}
-END_CODE_BLOCK
