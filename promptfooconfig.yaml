@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+
+# Learn more about building a configuration: https://promptfoo.dev/docs/configuration/guide
+description: "TDD"
+
+prompts:
+  - id: file://test.py
+    label: prompt_python
+  - file://test.py
+
+
+providers:
+  - id: mistral:codestral-mamba-latest
+    config:
+        apiKey: "uxDZhDlrk7fOhU6B9dd80i4E6Tg1lfAK"
+    prompts:
+      - prompt_python
+  - id: mistral:codestral-latest
+    config:
+      apiKey: "uxDZhDlrk7fOhU6B9dd80i4E6Tg1lfAK"
+    prompts:
+      - prompt_python
+
+tests: tests.json
