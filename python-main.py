@@ -1,20 +1,21 @@
 import os
 import re
 import subprocess
-from mistralai import Mistral
 from datasets import load_dataset
-
+from mistralai import Mistral
 
 api_key = os.environ["MISTRAL_API_KEY"]
 client = Mistral(api_key=api_key)
-model = "codestral-mamba-latest"
+model = "codestral-2501"
+
+
 
 class CodeTransPrompt:
     system_prompt = (
         "You are an expert in code translation and follow test-driven development (TDD) principles. "
-        "Translate the following {source_language} code to {target_language}. Ensure that your translation is executable"
-        "and suitable for generating test cases. "
-        # "validated by tests. "
+        "Translate the following {source_language} code to {target_language}. Ensure that your translation is executable "
+        # "and suitable for generating test cases. "
+        "and passed the test cases. "
     )
 
     user_prompt = (
@@ -39,7 +40,7 @@ class CodeTransPrompt:
                 target_language=context["target_language"],
                 source_language_lower=context["source_language"].lower(),
                 target_language_lower=context["target_language"].lower(),
-                code=context["code"])},
+                code=context["code"],)}
                 # test_cases=context["test_cases"])}
         ]
 
@@ -72,16 +73,22 @@ target_language = "Python"
 
 
 dataset = load_dataset("code_x_glue_cc_code_to_code_trans", "default", split="train[:1]")
-for example in dataset:
-    java_code = example["java"]
+# dataset = load_dataset("THUDM/humaneval-x", "java", split="test[:1]")
+for data in dataset:
+    # java_code = data.get("canonical_solution")
+    java_code = data["java"]
+    # test_cases = data.get("example_test")
+    print("Java code: " + java_code)
     context = {"source_language": source_language,
                 "target_language": target_language,
-                "code": java_code}
+                "code": java_code,}
+               # "test_cases": test_cases}
 
     prompt_messages = CodeTransPrompt.prompt(context)
     print(prompt_messages)
 
     chat_response = client.chat.complete(model=model, messages=prompt_messages)
     translated_python_code = chat_response.choices[0].message.content.strip()
+    print(translated_python_code)
     python_code = extract_python_code(translated_python_code)
     generate_pynguin_tests(python_code)
