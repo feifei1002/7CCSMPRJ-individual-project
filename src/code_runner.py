@@ -17,7 +17,7 @@ class CodeRunner:
         dir_path = os.path.dirname(file_path)
         subprocess.run(["javac", file_path], cwd=dir_path)
         class_file = file_path.replace(".java", "")
-        return subprocess.run(["java", class_file], cwd=dir_path, capture_output=True, text=True)
+        return subprocess.run(["java", "Main"], cwd=dir_path, capture_output=True, text=True)
 
     @staticmethod
     def run_cpp(file_path):

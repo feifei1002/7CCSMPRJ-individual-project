@@ -1,4 +1,6 @@
 import os
+import re
+
 from mistralai import Mistral
 from src.code_execution import execute_code_and_tests
 from src.config import MISTRAL_API_KEY, PROJECT_DIR, MODEL_NAME
@@ -25,10 +27,20 @@ def format_test_case(language, test_case):
     }
     return templates.get(language, test_case)
 
+def clean_code(code):
+    # Remove triple backticks and language identifiers
+    code = code.strip()
+    # Remove opening markers like ```java, ```python, etc.
+    code = re.sub(r'^```\w+\n', '', code)
+    # Remove closing ```
+    code = re.sub(r'\n```$', '', code)
+    # Remove any standalone ```
+    code = code.replace('```', '')
+    return code
 
 def main():
     client = Mistral(api_key=MISTRAL_API_KEY)
-    source_language = "Java"
+    source_language = "JavaScript"
     target_language = "Python"
 
     test_dataset = load_test_dataset(target_language)
@@ -41,7 +53,7 @@ def main():
     for index, (code, test) in enumerate(zip(code_dataset, test_dataset)):
         source_code = code.get("canonical_solution")
         declaration = test.get("declaration")
-        test_cases = test.get("test")
+        test_cases = test.get("example_test")
 
         context = {
             "source_language": source_language,
@@ -58,11 +70,12 @@ def main():
         translated_code = chat_response.choices[0].message.content.strip()
 
         file_extension = get_file_extension(target_language)
-        file_name = f"problem_{index}.{file_extension}"
+        file_name = "Main.java" if target_language == "Java" else f"problem_{index}.{file_extension}"
         file_path = os.path.join(output_dir, file_name)
 
         with open (file_path, "w") as f:
-            f.write(translated_code + "\n")
+            cleaned_code = clean_code(translated_code)
+            f.write(cleaned_code + "\n")
             f.write(test_cases)
 
         result = execute_code_and_tests(file_path, target_language, test_dataset, index)
