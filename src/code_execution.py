@@ -15,6 +15,10 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
         execution_result["output"] = output
         execution_result["error"] = error
 
+        error_info = []
+        if error:
+            error_info.append(f"Runtime error: {error}")
+
         # Common error indicators across languages
         error_indicators = [
             "AssertionError",
@@ -24,25 +28,31 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
             "Failed"
         ]
 
-        # Check if any error indicators are present
-        has_errors = any(indicator in output or indicator in error for indicator in error_indicators)
+        for indicator in error_indicators:
+            if indicator in output:
+                error_info.append(f"Test outpur error: {output}")
+                break
+
+        execution_result["error"] = "\n".join(error_info)
+
+        has_errors = bool(error_info)
 
         # Test success conditions
         if success and not has_errors:
             if language == "JavaScript":
-                execution_result["tests_passed"] = "PASS" in output or not error
+                execution_result["tests_passed"] = "PASS" in output
             elif language == "Python":
-                execution_result["tests_passed"] = not error and "AssertionError" not in output
+                execution_result["tests_passed"] = "AssertionError" not in output
             elif language == "Java":
-                execution_result["tests_passed"] = not error and "Exception" not in output
+                execution_result["tests_passed"] = "Exception" not in output
             elif language == "C++" or language == "Go":
-                execution_result["tests_passed"] = not error
+                execution_result["tests_passed"] = True
             else:
                 # Default case
-                execution_result["tests_passed"] = success and not error
+                execution_result["tests_passed"] = success
 
     except Exception as e:
-        execution_result["error"] = str(e)
+        execution_result["error"] = f"Execution error: {str(e)}"
         execution_result["compilation_success"] = False
         execution_result["tests_passed"] = False
 

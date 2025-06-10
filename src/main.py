@@ -7,25 +7,6 @@ from src.config import MISTRAL_API_KEY, PROJECT_DIR, MODEL_NAME
 from src.data_utils import load_test_dataset, get_file_extension, load_code_dataset
 from src.prompts import CodeTransPrompt
 
-def create_file_header(language):
-    headers = {
-        "Python": "from typing import List\n\n",
-        "Java": "import java.util.*;\nimport java.lang.*;\n\npublic class Solution {\n",
-        "JavaScript": "// JavaScript Solutions\n\n",
-        "C++": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\n\n",
-        "Go": "package main\n\nimport (\n\t\"fmt\"\n)\n\n"
-    }
-    return headers.get(language, "")
-
-def format_test_case(language, test_case):
-    templates = {
-        "Python": f"if __name__ == '__main__':\n{test_case}",
-        "Java": f"    public static void main(String[] args) {{\n        {test_case}\n    }}\n}}",
-        "JavaScript": f"\n{test_case}",
-        "C++": f"int main() {{\n    {test_case}\n    return 0;\n}}",
-        "Go": f"func main() {{\n\t{test_case}\n}}"
-    }
-    return templates.get(language, test_case)
 
 def clean_code(code):
     # Remove triple backticks and language identifiers
@@ -40,7 +21,7 @@ def clean_code(code):
 
 def main():
     client = Mistral(api_key=MISTRAL_API_KEY)
-    source_language = "JavaScript"
+    source_language = "Java"
     target_language = "Python"
 
     test_dataset = load_test_dataset(target_language)
@@ -49,6 +30,10 @@ def main():
     output_dir = os.path.join(PROJECT_DIR, f"{source_language.lower()}_to_{target_language.lower()}")
     os.makedirs(output_dir, exist_ok=True)
     results_file = os.path.join(output_dir, "results.txt")
+
+    file_extension = get_file_extension(target_language)
+    file_name = "Main.java" if target_language == "Java" else f"main.{file_extension}"
+    file_path = os.path.join(output_dir, file_name)
 
     for index, (code, test) in enumerate(zip(code_dataset, test_dataset)):
         source_code = code.get("canonical_solution")
@@ -69,21 +54,31 @@ def main():
         chat_response = client.chat.complete(model=MODEL_NAME, messages=prompt_messages)
         translated_code = chat_response.choices[0].message.content.strip()
 
-        file_extension = get_file_extension(target_language)
-        file_name = "Main.java" if target_language == "Java" else f"problem_{index}.{file_extension}"
-        file_path = os.path.join(output_dir, file_name)
+        # file_extension = get_file_extension(target_language)
+        # file_name = "Main.java" if target_language == "Java" else f"problem_{index}.{file_extension}"
+        # file_path = os.path.join(output_dir, file_name)
 
         with open (file_path, "w") as f:
             cleaned_code = clean_code(translated_code)
             f.write(cleaned_code + "\n")
             f.write(test_cases)
 
-        result = execute_code_and_tests(file_path, target_language, test_dataset, index)
+        try:
+            result = execute_code_and_tests(file_path, target_language, test_dataset, index)
+            compilation_success = result.get("compilation_success", False)
+            tests_passed = result.get("tests_passed", False)
+            error_message = result.get("error", "")
+        except Exception as e:
+            compilation_success = False
+            tests_passed = False
+            error_message = "System error: {str(e)}\n{traceback.format_exc()}"
 
         with open(results_file, "a") as f:
             f.write(f"Problem {index}:\n")
-            f.write(f"Compilation successful: {result['compilation_success']}\n")
-            f.write(f"Tests passed: {result['tests_passed']}\n")
+            f.write(f"Compilation successful: {compilation_success}\n")
+            f.write(f"Tests passed: {tests_passed}\n")
+            if error_message:
+                f.write(f"Error: {error_message}\n")
             f.write("-" * 50 + "\n")
         print(f"Processed problem {index} -> {file_name}")
 
