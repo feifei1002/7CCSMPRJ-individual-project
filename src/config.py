@@ -1,9 +1,11 @@
 import os
-from mistralai import Mistral
+
 
 MISTRAL_API_KEY = os.environ["MISTRAL_API_KEY"]
-client = Mistral(api_key=MISTRAL_API_KEY)
-MODEL_NAME = "codestral-2501"
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
 PROJECT_DIR = os.getcwd()
 
 LANGUAGE_MAP = {

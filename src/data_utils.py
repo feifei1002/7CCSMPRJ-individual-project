@@ -9,8 +9,8 @@ def get_dataset_name(language):
 def get_file_extension(language):
     return FILE_EXTENSION.get(language, language)
 
-def load_test_dataset(target_language, split="test[:10]"):
+def load_test_dataset(target_language, split="test[:1]"):
     return load_dataset("THUDM/humaneval-x", get_dataset_name(target_language), split=split)
 
-def load_code_dataset(source_language, split="test[:10]"):
+def load_code_dataset(source_language, split="test[:1]"):
     return load_dataset("THUDM/humaneval-x", get_dataset_name(source_language), split=split)
