@@ -1,5 +1,3 @@
-import time
-
 from anthropic import Anthropic
 from google import genai
 from mistralai import Mistral
@@ -24,22 +22,21 @@ class CodestralLLM(BaseLLM):
         )
         return response.choices[0].message.content.strip()
 
-# class OpenAILLM(BaseLLM):
-#     def __init__(self, model_name="gpt-4o-mini"):
-#         self.client = OpenAI(api_key=OPENAI_API_KEY)
-#         self.model_name = model_name
-#
-#     def generate(self, messages):
-#         delay_request()
-#         try:
-#             response = self.client.chat.completions.create(
-#                 model=self.model_name,
-#                 messages=messages,
-#             )
-#             return response.choices[0].message.content.strip()
-#         except Exception as e:
-#             print(f"OpenAI API error: {e}")
-#             return None
+class OpenAILLM(BaseLLM):
+    def __init__(self, model_name="gpt-4o-mini"):
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.model_name = model_name
+
+    def generate(self, messages):
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"OpenAI API error: {e}")
+            return None
 
 class ClaudeLLM(BaseLLM):
     def __init__(self, model_name="claude-3-5-haiku-20241022"):

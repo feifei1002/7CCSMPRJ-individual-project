@@ -1,7 +1,13 @@
+import os
+from subprocess import run, PIPE
+
 from src.code_runner import CodeRunner
 
 
 def execute_code_and_tests(file_path, language, test_dataset, index=0):
+    """
+    Execute code and run tests with improved compilation and execution checking.
+    """
     execution_result = {
         "compilation_success": False,
         "tests_passed": False,
@@ -10,50 +16,73 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
     }
 
     try:
-        success, output, error = CodeRunner.execute(language, file_path)
-        execution_result["compilation_success"] = success
-        execution_result["output"] = output
-        execution_result["error"] = error
+        if language == "Python":
+            # Check compilation first
+            compile_cmd = ["python", "-m", "py_compile", file_path]
+            p = run(compile_cmd, stderr=PIPE)
+            execution_result["compilation_success"] = p.returncode == 0
 
-        error_info = []
-        if error:
-            error_info.append(f"Runtime error: {error}")
+            if not execution_result["compilation_success"]:
+                execution_result["error"] = p.stderr.decode("utf-8")
+                return execution_result
 
-        # Common error indicators across languages
-        error_indicators = [
-            "AssertionError",
-            "Error:",
-            "error:",
-            "Exception",
-            "Failed"
-        ]
+            # Run tests if compilation successful
+            run_cmd = ["python", file_path]
+            p = run(run_cmd, stderr=PIPE, stdout=PIPE)
+            execution_result["output"] = p.stdout.decode("utf-8")
+            if p.stderr:
+                execution_result["error"] = p.stderr.decode("utf-8")
 
-        for indicator in error_indicators:
-            if indicator in output:
-                error_info.append(f"Test outpur error: {output}")
-                break
+            # Check test results
+            execution_result["tests_passed"] = (
+                    p.returncode == 0
+                    and "AssertionError" not in execution_result["output"]
+                    and "Error:" not in execution_result["output"]
+            )
 
-        execution_result["error"] = "\n".join(error_info)
+        elif language == "Java":
+            # Compile Java code
+            compile_cmd = ["javac", file_path]
+            p = run(compile_cmd, stderr=PIPE)
+            execution_result["compilation_success"] = p.returncode == 0
 
-        has_errors = bool(error_info)
+            if not execution_result["compilation_success"]:
+                execution_result["error"] = p.stderr.decode("utf-8")
+                return execution_result
 
-        # Test success conditions
-        if success and not has_errors:
-            if language == "JavaScript":
-                execution_result["tests_passed"] = "PASS" in output
-            elif language == "Python":
-                execution_result["tests_passed"] = "AssertionError" not in output
-            elif language == "Java":
-                execution_result["tests_passed"] = "Exception" not in output
-            elif language == "C++" or language == "Go":
-                execution_result["tests_passed"] = True
-            else:
-                # Default case
-                execution_result["tests_passed"] = success
+            # Run tests if compilation successful
+            class_name = "Main"
+            run_cmd = ["java", "-cp", os.path.dirname(file_path), class_name]
+            p = run(run_cmd, stderr=PIPE, stdout=PIPE)
+            execution_result["output"] = p.stdout.decode("utf-8")
+            if p.stderr:
+                execution_result["error"] = p.stderr.decode("utf-8")
+
+            # Check test results
+            execution_result["tests_passed"] = (
+                    p.returncode == 0
+                    and "Exception" not in execution_result["output"]
+                    and "Error:" not in execution_result["output"]
+            )
+
+        else:
+            # Existing handling for other languages
+            success, output, error = CodeRunner.execute(language, file_path)
+            execution_result["compilation_success"] = success
+            execution_result["output"] = output
+            execution_result["error"] = error
+            execution_result["tests_passed"] = success and not error
 
     except Exception as e:
         execution_result["error"] = f"Execution error: {str(e)}"
         execution_result["compilation_success"] = False
         execution_result["tests_passed"] = False
+
+    finally:
+        # Clean up generated class files for Java
+        if language == "Java":
+            class_file = os.path.join(os.path.dirname(file_path), "Main.class")
+            if os.path.exists(class_file):
+                os.remove(class_file)
 
     return execution_result

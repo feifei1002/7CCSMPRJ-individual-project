@@ -4,7 +4,7 @@ import re
 from src.code_execution import execute_code_and_tests
 from src.config import PROJECT_DIR
 from src.data_utils import load_test_dataset, get_file_extension, load_code_dataset
-from src.llms import CodestralLLM, ClaudeLLM, GeminiLLM, DeepseekLLM
+from src.llms import CodestralLLM, ClaudeLLM, GeminiLLM, DeepseekLLM, OpenAILLM
 from src.prompts import InitialPrompt, RoleBasedPrompt
 
 
@@ -20,12 +20,12 @@ def clean_code(code):
     return code
 
 def main():
-    # client = Mistral(api_key=MISTRAL_API_KEY)
     source_language = "Java"
     target_language = "Python"
 
     llm_models = {
         "Mistral": CodestralLLM(),
+        "OpenAI": OpenAILLM(),
         "Claude": ClaudeLLM(),
         "Gemini": GeminiLLM(),
         "DeepSeek": DeepseekLLM()

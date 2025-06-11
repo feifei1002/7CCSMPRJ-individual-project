@@ -5,8 +5,8 @@ class BasePrompt:
 
 class InitialPrompt(BasePrompt):
     system_prompt = (
-        "Translate the following {source_language} code to {target_language}. "
-        "Using the provided test cases. "
+        "Translate the following {source_language} code to {target_language}, "
+        "using the provided test cases. "
         "Do not return anything other than the translated code. "
     )
     user_prompt = (

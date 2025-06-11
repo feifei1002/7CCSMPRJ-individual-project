@@ -72,8 +72,8 @@ source_language = "Java"
 target_language = "Python"
 
 
-dataset = load_dataset("code_x_glue_cc_code_to_code_trans", "default", split="train[:1]")
-# dataset = load_dataset("THUDM/humaneval-x", "java", split="test[:1]")
+dataset = load_dataset("code_x_glue_cc_code_to_code_trans", "default", split="validation[:1]")
+# dataset = load_dataset("THUDM/humaneval-x", "java", split="test[1:2]")
 for data in dataset:
     # java_code = data.get("canonical_solution")
     java_code = data["java"]
