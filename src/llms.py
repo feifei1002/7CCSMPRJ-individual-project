@@ -65,7 +65,7 @@ class ClaudeLLM(BaseLLM):
         return response.content[0].text.strip()
 
 class GeminiLLM(BaseLLM):
-    def __init__(self, model_name="gemini-2.0-flash"):
+    def __init__(self, model_name="gemini-1.5-pro"):
         self.client = genai.Client(api_key=GOOGLE_API_KEY)
         self.model_name = model_name
 
