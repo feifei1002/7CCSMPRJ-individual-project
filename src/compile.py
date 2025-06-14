@@ -73,23 +73,27 @@ def calculate_success_rate(filename):
         return None, 0, 0
 
 
-def save_table_as_image(result_table, filename='results_table.png'):
+def save_table_as_image(result_table, filename):
     # Convert PrettyTable data to list of lists
     table_data = [result_table.field_names]  # Add headers
-    table_data.extend(result_table._rows)     # Add rows
+    table_data.extend(result_table._rows)  # Add rows
 
     # Create figure and axis
-    fig, ax = plt.subplots(figsize=(15, len(table_data) * 0.5 + 1))
-    fig.patch.set_alpha(0.0)  # Make the figure background transparent
-    ax.patch.set_alpha(0.0)  # Make the axis background transparent
+    fig, ax = plt.subplots(figsize=(12, len(table_data) * 0.5))
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
     ax.axis('tight')
     ax.axis('off')
 
+    # Add title
+    strategy_name = os.path.basename(filename).replace('_results.png', '').replace('_', ' ')
+    plt.title(strategy_name, fontsize=12, fontweight='bold', fontfamily='Arial')
+
     # Create table
     result_table = ax.table(cellText=table_data,
-                    cellLoc='center',
-                    loc='center',
-                    colWidths=[0.2, 0.15, 0.15, 0.15, 0.15, 0.1, 0.1])
+                            cellLoc='center',
+                            loc='center',
+                            colWidths=[0.2, 0.15, 0.15, 0.15, 0.1, 0.1])
 
     # Adjust table properties
     result_table.auto_set_font_size(False)
@@ -97,14 +101,13 @@ def save_table_as_image(result_table, filename='results_table.png'):
     result_table.scale(1.2, 1.5)
 
     for pos, cell in result_table._cells.items():
-        cell.set_facecolor('none')  # Make all cells transparent
-        if pos[0] == 0:  # Header row
+        cell.set_facecolor('none')
+        if pos[0] == 0:
             cell.set_text_props(fontfamily='Arial', fontsize=9, weight='bold', color='black')
-        else:  # Data rows
+        else:
             cell.set_text_props(fontfamily='Arial', fontsize=9, color='black')
 
-    # Save to file
-    plt.savefig(filename, bbox_inches='tight', dpi=300, pad_inches=0.1)
+    plt.savefig(filename, bbox_inches='tight', dpi=300, pad_inches=0.05)
     plt.close()
 
 
@@ -112,35 +115,67 @@ def save_table_as_image(result_table, filename='results_table.png'):
 script_dir = os.path.dirname(os.path.abspath(__file__))
 results_dir = os.path.join(script_dir, '..')
 
-# Create table
-table = PrettyTable()
-table.field_names = ["Prompt Strategy", "LLM Model", "Source Language", "Target Language",
-                     "Success Rate (%)", "Successful/Total", "Failure/Total"]
+# Create a dictionary to store tables by prompt strategy
+strategy_tables = {}
+
+# Initialize field names for all tables
+field_names = ["LLM Model", "Source Language", "Target Language",
+               "Success Rate (%)", "Successful/Total", "Failure/Total"]
 
 # Walk through directories to find result files
+results = []
 for root, _, files in os.walk(results_dir):
     for file in files:
         if file.endswith('.txt'):
             rel_path = os.path.relpath(os.path.join(root, file), results_dir)
             if '_to_' in rel_path:
                 info = parse_file_info(rel_path)
-                if all(info):  # Check if parsing was successful
+                if all(info):
                     prompt_strategy, llm_model, source_lang, target_lang = info
                     success_rate, total, successful, failed = calculate_success_rate(rel_path)
 
                     if success_rate is not None:
-                        table.add_row([
-                            prompt_strategy,
-                            llm_model,
-                            source_lang,
-                            target_lang,
-                            f"{success_rate:.2f}",
-                            f"{successful}/{total}",
-                            f"{failed}/{total}"
-                        ])
+                        results.append({
+                            'strategy': prompt_strategy,
+                            'model': llm_model,
+                            'source': source_lang,
+                            'target': target_lang,
+                            'success_rate': success_rate,
+                            'successful': successful,
+                            'total': total,
+                            'failed': failed
+                        })
 
-# Print the table
-print(table)
+# Group results by strategy and create tables
+for result in results:
+    strategy = result['strategy']
 
-# Save the table as an image
-save_table_as_image(table)
+    # Initialize table if not already done
+    if strategy not in strategy_tables:
+        table = PrettyTable()
+        table.field_names = field_names
+        strategy_tables[strategy] = table
+
+    # Add row to corresponding strategy table
+    strategy_tables[strategy].add_row([
+        result['model'],
+        result['source'],
+        result['target'],
+        f"{result['success_rate']:.2f}",
+        f"{result['successful']}/{result['total']}",
+        f"{result['failed']}/{result['total']}"
+    ])
+
+# Create output directory for tables if it doesn't exist
+output_dir = os.path.join(script_dir, '..', 'tables')
+os.makedirs(output_dir, exist_ok=True)
+
+# Save each strategy table as a separate image
+for strategy, table in strategy_tables.items():
+    print(f"\nResults for {strategy}:")
+    print(table)
+
+    # Create filename-safe version of strategy name
+    safe_strategy_name = strategy.replace(' ', '_').replace('/', '_')
+    image_filename = os.path.join(output_dir, f'{safe_strategy_name}_results.png')
+    save_table_as_image(table, image_filename)

@@ -5,7 +5,7 @@ from src.code_execution import execute_code_and_tests
 from src.config import PROJECT_DIR
 from src.data_utils import load_test_dataset, get_file_extension, load_code_dataset
 from src.llms import CodestralLLM, ClaudeLLM, GeminiLLM, DeepseekLLM, OpenAILLM
-from src.prompts import InitialPrompt, RoleBasedPrompt
+from src.prompts import InitialPrompt, RoleBasedPrompt, TestFirstPrompt, StepByStepPrompt, DirectMappingPrompt
 
 
 # def clean_code(code):
@@ -19,9 +19,26 @@ from src.prompts import InitialPrompt, RoleBasedPrompt
 #     code = code.replace('```', '')
 #     return code
 
+def clean_code(code):
+    # Extract code between markers only
+    code = code.strip()
+    marker_match = re.search(r'```(?:\w+)?\n(.*?)\n```', code, re.DOTALL)
+
+    if marker_match:
+        # Get only the code within markers
+        code = marker_match.group(1).strip()
+
+        # Remove empty lines and trailing whitespace
+        code = '\n'.join(line.rstrip() for line in code.splitlines() if line.strip())
+
+        return code
+
+    # If no markers found, return cleaned original code
+    return code
+
 def main():
-    source_language = "Java"
-    target_language = "Python"
+    source_language = "Python"
+    target_language = "Java"
 
     llm_models = {
         "Codestral": CodestralLLM(),
@@ -34,6 +51,9 @@ def main():
     prompt_strategies = [
         InitialPrompt,
         RoleBasedPrompt,
+        TestFirstPrompt,
+        StepByStepPrompt,
+        DirectMappingPrompt
     ]
 
     test_dataset = load_test_dataset(target_language)
@@ -75,9 +95,9 @@ def main():
                 # file_path = os.path.join(output_dir, file_name)
 
                 with open (file_path, "w") as f:
-                    # cleaned_code = clean_code(translated_code)
-                    f.write(translated_code + "\n")
-                    f.write(test_cases)
+                    cleaned_code = clean_code(translated_code)
+                    f.write(cleaned_code + "\n")
+                    # f.write(test_cases)
 
                 try:
                     result = execute_code_and_tests(file_path, target_language, test_dataset, index)
@@ -97,7 +117,7 @@ def main():
                         f.write(f"Error: {error_message}\n")
                     f.write("-" * 50 + "\n")
 
-                os.remove(file_path)
+                # os.remove(file_path)
                 print(f"Processed problem {index}")
 
 if __name__ == "__main__":
