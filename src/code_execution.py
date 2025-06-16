@@ -3,7 +3,6 @@ from subprocess import run, PIPE
 
 from src.code_runner import CodeRunner
 
-
 def execute_code_and_tests(file_path, language, test_dataset, index=0):
     """
     Execute code and run tests with improved compilation and execution checking.

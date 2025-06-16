@@ -2,23 +2,27 @@ from anthropic import Anthropic
 from google import genai
 from mistralai import Mistral
 from openai import OpenAI
+from google.genai import types
 
-from src.config import MISTRAL_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, DEEPSEEK_API_KEY
+from src.config import OPENAI_API_KEY, ANTHROPIC_API_KEY, OPENROUTER_API_KEY
 
 
 class BaseLLM:
     def generate(self, messages):
         raise NotImplementedError
 
-class CodestralLLM(BaseLLM):
-    def __init__(self, model_name="codestral-2501"):
-        self.client = Mistral(api_key=MISTRAL_API_KEY)
+class MistralLLM(BaseLLM):
+    def __init__(self, model_name="mistralai/codestral-2501"):
+        self.client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         self.model_name = model_name
 
     def generate(self, messages):
-        response = self.client.chat.complete(
+        response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
+            max_tokens=8000,
+            temperature=0.0,
+            top_p=1.0,
         )
         return response.choices[0].message.content.strip()
 
@@ -59,14 +63,16 @@ class ClaudeLLM(BaseLLM):
 
         response = self.client.messages.create(
             model=self.model_name,
-            max_tokens=8000,
             system=system_message,
-            messages=chat_message,)
+            messages=chat_message,
+            max_tokens=8000,
+            temperature=0.0,
+            top_p=1.0)
         return response.content[0].text.strip()
 
 class GeminiLLM(BaseLLM):
-    def __init__(self, model_name="gemini-1.5-pro"):
-        self.client = genai.Client(api_key=GOOGLE_API_KEY)
+    def __init__(self, model_name="google/gemini-2.0-flash-001"):
+        self.client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         self.model_name = model_name
 
     def generate(self, messages):
@@ -77,20 +83,27 @@ class GeminiLLM(BaseLLM):
             content = message["content"]
             formatted_content += f"{role.upper}: {content}\n"
 
-        response = self.client.models.generate_content(
+        response = self.client.chat.completions.create(
             model=self.model_name,
-            contents=formatted_content,
+            messages=messages,
+            max_tokens=8000,
+            temperature=0.0,
+            top_p=1.0,
+
         )
-        return response.text.strip()
+        return response.choices[0].message.content.strip()
 
 class DeepseekLLM(BaseLLM):
-    def __init__(self, model_name="deepseek/deepseek-r1-0528:free"):
-        self.client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://openrouter.ai/api/v1")
+    def __init__(self, model_name="deepseek/deepseek-chat-v3-0324"):
+        self.client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         self.model_name = model_name
 
     def generate(self, messages):
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
+            max_tokens=8000,
+            temperature=0.0,
+            top_p=1.0,
         )
         return response.choices[0].message.content.strip()

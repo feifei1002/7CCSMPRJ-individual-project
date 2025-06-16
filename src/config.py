@@ -1,11 +1,9 @@
 import os
 
 
-MISTRAL_API_KEY = os.environ["MISTRAL_API_KEY"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 PROJECT_DIR = os.getcwd()
 
 LANGUAGE_MAP = {

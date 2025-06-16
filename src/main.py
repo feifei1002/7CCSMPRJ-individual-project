@@ -4,7 +4,7 @@ import re
 from src.code_execution import execute_code_and_tests
 from src.config import PROJECT_DIR
 from src.data_utils import load_test_dataset, get_file_extension, load_code_dataset
-from src.llms import CodestralLLM, ClaudeLLM, GeminiLLM, DeepseekLLM, OpenAILLM
+from src.llms import MistralLLM, ClaudeLLM, GeminiLLM, DeepseekLLM, OpenAILLM
 from src.prompts import InitialPrompt, RoleBasedPrompt, TestFirstPrompt, StepByStepPrompt, DirectMappingPrompt
 
 
@@ -37,15 +37,15 @@ def clean_code(code):
     return code
 
 def main():
-    source_language = "Python"
-    target_language = "Java"
+    source_language = "Java"
+    target_language = "Python"
 
     llm_models = {
-        "Codestral": CodestralLLM(),
+        # "Mistral": MistralLLM(),
         # "OpenAI": OpenAILLM(),
-        # "Claude": ClaudeLLM(),
+        "Claude": ClaudeLLM(),
         # "Gemini": GeminiLLM(),
-        "DeepSeek": DeepseekLLM()
+        # "DeepSeek": DeepseekLLM()
     }
 
     prompt_strategies = [
@@ -97,7 +97,7 @@ def main():
                 with open (file_path, "w") as f:
                     cleaned_code = clean_code(translated_code)
                     f.write(cleaned_code + "\n")
-                    # f.write(test_cases)
+                    f.write(test_cases)
 
                 try:
                     result = execute_code_and_tests(file_path, target_language, test_dataset, index)
