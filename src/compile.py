@@ -121,78 +121,85 @@ def save_table_as_image(result_table, filename):
 
 
 # Main execution code
-script_dir = os.path.dirname(os.path.abspath(__file__))
-results_dir = os.path.join(script_dir, '..')
+def main():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    results_dir = os.path.join(script_dir, '..')
 
-# Create a dictionary to store tables by prompt strategy
-strategy_tables = {}
+    # Create a dictionary to store tables by prompt strategy
+    strategy_tables = {}
 
-# Initialize field names for all tables
-field_names = ["LLM Model", "Compile Succeed Rate (%)", "Success/Total", "Fail/Total", "Tests Passed Rate (%)", "Tests Passed/Total", "Tests Failed/Total"]
+    # Initialize field names for all tables
+    field_names = ["LLM Model", "Compile Succeed Rate (%)", "Success/Total", "Fail/Total", "Tests Passed Rate (%)", "Tests Passed/Total", "Tests Failed/Total"]
 
-# Walk through directories to find result files
-results = []
-for root, _, files in os.walk(results_dir):
-    for file in files:
-        if file.endswith('.txt'):
-            rel_path = os.path.relpath(os.path.join(root, file), results_dir)
-            if '_to_' in rel_path:
-                info = parse_file_info(rel_path)
-                if all(info):
-                    prompt_strategy, llm_model, source_lang, target_lang = info
-                    success_rate, test_pass_rate, total, successful, failed, test_passed, test_failed = calculate_success_rate(rel_path)
+    # Walk through directories to find result files
+    results = []
+    for root, _, files in os.walk(results_dir):
+        for file in files:
+            if file.endswith('.txt'):
+                rel_path = os.path.relpath(os.path.join(root, file), results_dir)
+                # Skip error analysis report files
+                if 'error_analysis_report' in rel_path:
+                    continue
+                if '_to_' in rel_path:
+                    info = parse_file_info(rel_path)
+                    if all(info):
+                        prompt_strategy, llm_model, source_lang, target_lang = info
+                        success_rate, test_pass_rate, total, successful, failed, test_passed, test_failed = calculate_success_rate(rel_path)
 
-                    if success_rate is not None:
-                        direction = f"{source_lang} to {target_lang}"
-                        results.append({
-                            'strategy': prompt_strategy,
-                            'direction': direction,
-                            'model': llm_model,
-                            'source': source_lang,
-                            'target': target_lang,
-                            'total': total,
-                            'success_rate': success_rate,
-                            'successful': successful,
-                            'failed': failed,
-                            'test_pass_rate': test_pass_rate,
-                            'tests_passed': test_passed,
-                            'tests_failed': test_failed
-                        })
+                        if success_rate is not None:
+                            direction = f"{source_lang} to {target_lang}"
+                            results.append({
+                                'strategy': prompt_strategy,
+                                'direction': direction,
+                                'model': llm_model,
+                                'source': source_lang,
+                                'target': target_lang,
+                                'total': total,
+                                'success_rate': success_rate,
+                                'successful': successful,
+                                'failed': failed,
+                                'test_pass_rate': test_pass_rate,
+                                'tests_passed': test_passed,
+                                'tests_failed': test_failed
+                            })
 
-# Group results by strategy and create tables
-for result in results:
-    strategy = result['strategy']
-    direction = result['direction']
-    key = (strategy, direction)
+    # Group results by strategy and create tables
+    for result in results:
+        strategy = result['strategy']
+        direction = result['direction']
+        key = (strategy, direction)
 
-    # Initialize table if not already done
-    if key not in strategy_tables:
-        table = PrettyTable()
-        table.field_names = field_names
-        strategy_tables[key] = table
+        # Initialize table if not already done
+        if key not in strategy_tables:
+            table = PrettyTable()
+            table.field_names = field_names
+            strategy_tables[key] = table
 
-    # Add row to corresponding strategy table
-    strategy_tables[key].add_row([
-        result['model'],
-        f"{result['success_rate']:.2f}",
-        f"{result['successful']}/{result['total']}",
-        f"{result['failed']}/{result['total']}",
-        f"{result['test_pass_rate']:.2f}",
-        f"{result['tests_passed']}/{result['total']}",
-        f"{result['tests_failed']}/{result['total']}"
-    ])
+        # Add row to corresponding strategy table
+        strategy_tables[key].add_row([
+            result['model'],
+            f"{result['success_rate']:.2f}",
+            f"{result['successful']}/{result['total']}",
+            f"{result['failed']}/{result['total']}",
+            f"{result['test_pass_rate']:.2f}",
+            f"{result['tests_passed']}/{result['total']}",
+            f"{result['tests_failed']}/{result['total']}"
+        ])
 
-# Create output directory for tables if it doesn't exist
-output_dir = os.path.join(script_dir, '..', 'tables')
-os.makedirs(output_dir, exist_ok=True)
+    # Create output directory for tables if it doesn't exist
+    output_dir = os.path.join(script_dir, '..', 'tables')
+    os.makedirs(output_dir, exist_ok=True)
 
-# Save each strategy table as a separate image
-for (strategy, direction), table in strategy_tables.items():
-    print(f"\nResults for {strategy} ({direction}):")
-    print(table)
+    # Save each strategy table as a separate image
+    for (strategy, direction), table in strategy_tables.items():
+        print(f"\nResults for {strategy} ({direction}):")
+        print(table)
 
-    # Create filename-safe version of strategy name
-    safe_strategy_name = strategy.replace(' ', '_').replace('/', '_')
-    safe_direction = direction.title()
-    image_filename = os.path.join(output_dir, f'{safe_strategy_name}_{safe_direction}_results.png')
-    save_table_as_image(table, image_filename)
+        # Create filename-safe version of strategy name
+        safe_strategy_name = strategy.replace(' ', '_').replace('/', '_')
+        safe_direction = direction.title()
+        image_filename = os.path.join(output_dir, f'{safe_strategy_name}_{safe_direction}_results.png')
+        save_table_as_image(table, image_filename)
+
+if __name__ == '__main__':
+    main()
