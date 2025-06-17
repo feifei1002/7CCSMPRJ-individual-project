@@ -126,7 +126,7 @@ class StepByStepPrompt(BasePrompt):
 
 class DirectMappingPrompt(BasePrompt):
     SYSTEM_PROMPT = (
-        "You are a assistant specialize in structural code translation,"
+        "You are an assistant specialize in structural code translation,"
         "maintaining similar architecture and logic between {source_language} and {target_language} while adapting syntax. "
         "You believe in preserving the original code's structure and logic flow to maintain clarity and debugging ease. "
     )
@@ -138,7 +138,7 @@ class DirectMappingPrompt(BasePrompt):
         "{target_language} test cases:\n"
         "\n{test_cases}\n"
         "\n{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
-        "Maintain similar structr by mapping:\n"
+        "Maintain similar structure by mapping:\n"
         "Classes -> Classes\n"
         "Methods -> Methods\n"
         "Functions -> Functions\n"

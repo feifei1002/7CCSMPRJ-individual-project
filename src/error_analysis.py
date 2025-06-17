@@ -113,7 +113,7 @@ def create_error_table(analyzer, dir_name, report_dir) -> None:
     ax.axis('off')
 
     # Add title
-    plt.title(f'Error Analysis Table for {dir_name}', fontsize=12, fontweight='bold', pad=1)
+    plt.title(f'Error Analysis Table for {dir_name}', fontsize=12, fontweight='bold', pad=1, fontfamily='Arial')
 
     # Create table
     cols = ['Model'] + df.columns.tolist()
