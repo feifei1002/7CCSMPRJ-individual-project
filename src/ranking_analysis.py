@@ -173,7 +173,7 @@ class RankingAnalysis:
             x = np.arange(len(strategies))
 
             # Create bars
-            plt.bar(x - width / 2, success_rates, width, label='Success Rate', color='black')
+            plt.bar(x - width / 2, success_rates, width, label='Compile Success Rate', color='black')
             plt.bar(x + width / 2, test_rates, width, label='Test Pass Rate', color='lightgrey')
 
             # Set y-axis range from 0 to 100
@@ -227,9 +227,6 @@ class RankingAnalysis:
                         'success_rate': strategy_stat['success_rate'],
                         'test_pass_rate': strategy_stat['test_pass_rate']
                     })
-
-            # Sort by success rate
-            model_data.sort(key=lambda x: x['success_rate'], reverse=True)
 
             # Prepare data for plotting
             models = [stat['model'] for stat in model_data]
