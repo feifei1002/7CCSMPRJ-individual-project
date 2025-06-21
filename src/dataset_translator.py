@@ -1,0 +1,47 @@
+import os
+
+from src.code_translator import CodeTranslator
+from src.data_utils import get_file_extension
+
+
+class DatasetTestTranslator(CodeTranslator):
+    def get_output_paths(self, llm_name: str, strategy_name: str) -> tuple:
+        output_dir, results_file = self.get_base_output_paths(llm_name, strategy_name)
+        file_extension = get_file_extension(self.target_language)
+        file_path = os.path.join(output_dir, f"main.{file_extension}")
+        return output_dir, results_file, file_path
+
+    def write_code_and_tests(self, output_dir: str, file_path: str, code: str, tests: str) -> None:
+        with open(file_path, "w") as f:
+            f.write(code + "\n")
+            f.write(tests)
+
+    def translate(self):
+        for llm_name, llm in self.llm_models.items():
+            for strategy in self.prompt_strategies:
+                output_dir, results_file, file_path = self.get_output_paths(llm_name, strategy.__name__)
+
+                for index, (code, test) in enumerate(zip(self.code_dataset, self.test_dataset)):
+                    source_code = code.get("canonical_solution")
+                    declaration = test.get("declaration")
+                    test_cases = test.get("example_test")
+
+                    context = {
+                        "source_language": self.source_language,
+                        "target_language": self.target_language,
+                        "declaration": declaration,
+                        "code": source_code,
+                        "test_cases": test_cases,
+                        "source_language_lower": self.source_language.lower(),
+                        "target_language_lower": self.target_language.lower(),
+                    }
+
+                    prompt_messages = strategy.prompt(context)
+                    translated_code = llm.generate(prompt_messages)
+                    cleaned_code = self.clean_code(translated_code)
+
+                    self.write_code_and_tests(output_dir, file_path, cleaned_code, test_cases)
+
+                    compilation_success, tests_passed, compilation_error, test_error, test_stats = self.execute_and_evaluate(file_path, index)
+                    self.write_results(results_file, index, compilation_success, tests_passed, compilation_error, test_error, test_stats)
+                    print(f"Processed problem {index}")
