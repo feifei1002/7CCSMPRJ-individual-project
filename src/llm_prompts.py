@@ -5,20 +5,23 @@ class BasePrompt:
 
 class InitialPromptWithLLMGeneratedTests(BasePrompt):
     SYSTEM_PROMPT = (
-        "You are a code translation assistant that prioritizes test-driven development (TDD). "
-        "Your primary goal is to translate {source_language} code to {target_language} accurately and passes all test cases. "
-        "Return both tests and translated code in clearly marked sections using TEST_BEGIN/TEST_END "
-        "and CODE_BEGIN/CODE_END markers."
+        "You are a code translation assistant focused on test-driven development (TDD). "
+        "Your objective is to translate {source_language} code to {target_language} accurately and passes all test cases. "
+        "First, translate the test cases to corresponding {target_language} tests. "
+        "Then, use those test cases as specifications to translate the code into {target_language}. "
+        "Ensure the final translation passes all the generated tests. "
+        "Return tests and translated code using TEST_BEGIN/END and CODE_BEGIN/END markers."
     )
     USER_PROMPT = (
-        "Translate the following {source_language} test cases to corresponding {target_language}:"
-        "{source_language} test cases:\n"
-        "\n{test_cases}\n"
-        "{test_template}\n"
-        "Using the translated test cases as requirements, translate the {source_language} code to {target_language}:\n"
-        "{source_language} code:\n"
-        "\n{code}\n"
-        "\n{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
+        "Translate the following {source_language} test cases to {target_language}:\n\n"
+        "{source_language} test cases:\n\n{test_cases}\n"
+        "{test_template}\n\n"
+        "Then, use the translated test cases as requirements, translate this {source_language} code to {target_language}:\n\n"
+        "{code}\n\n"
+        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
+        "Wrap the results as follows:\n"
+        "- Enclose test cases with TEST_BEGIN and TEST_END\n"
+        "- Enclose the translated code with CODE_BEGIN and CODE_END\n"
         "Return only the translated code without additional comments or explanations."
     )
 
@@ -65,67 +68,85 @@ class InitialPromptWithLLMGeneratedTests(BasePrompt):
                 target_language=context["target_language"],
             )},
             {"role": "user", "content": InitialPromptWithLLMGeneratedTests.USER_PROMPT.format(
-                **context,
-                test_template=test_template)}
+                **context, test_template=test_template)}
         ]
 
 class TestFirstPromptWithLLMGeneratedTests(BasePrompt):
     SYSTEM_PROMPT = (
-        "You are a code translation assistant that prioritizes test-driven development (TDD). "
-        "First generate comprehensive test cases, then translate {source_language} code to {target_language}. "
-        "You always start by understanding what the test cases expect before translating the code. "
-        "Your primary goal is to translate {source_language} code to {target_language} accurately."
-        "You prioritize writing code that passes all provided test cases. "
+        "You are a code translation assistant focused on test-driven development (TDD). "
+        "Your objective is to translate {source_language} code to {target_language} accurately and passes all test cases. "
+        "First, translate the test cases to corresponding {target_language} tests. "
+        "Then, use those test cases as specifications to translate the code into {target_language}. "
+        "You begin by analyzing the test cases to fully understand the required behavior before translating the code. "
+        "Ensure the final translation passes all the generated tests. "
+        "Return tests and translated code using TEST_BEGIN/END and CODE_BEGIN/END markers."
     )
     USER_PROMPT = (
-        "First, analyze the following {source_language} code to generate thorough test cases in {target_language}: "
-        "{source_language} code:\n"
-        "\n{code}\n"
-        "Then, study and understand the generated test cases to determine the expected behavior. "
-        "Using the generated test cases as requirements, translate the {source_language} code to {target_language}. "
-        "\n{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
+        "Translate the following {source_language} test cases to {target_language}:\n\n"
+        "{source_language} test cases:\n\n{test_cases}\n"
+        "{test_template}\n\n"
+        "Study and understand the translated test cases to determine the expected behavior. "
+        "Then, use the translated test cases as requirements, translate this {source_language} code to {target_language}:\n\n"
+        "{code}\n\n"
+        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
+        "Wrap the results as follows:\n"
+        "- Enclose test cases with TEST_BEGIN and TEST_END\n"
+        "- Enclose the translated code with CODE_BEGIN and CODE_END\n"
         "Return only the translated code without additional comments or explanations."
     )
 
     @staticmethod
     def prompt(context):
+        test_template = InitialPromptWithLLMGeneratedTests.get_test_framework_instructions(context["target_language"])
         return [
             {"role": "system", "content": TestFirstPromptWithLLMGeneratedTests.SYSTEM_PROMPT.format(
                 source_language=context["source_language"],
                 target_language=context["target_language"]
             )},
-            {"role": "user", "content": TestFirstPromptWithLLMGeneratedTests.USER_PROMPT.format(**context)}
+            {"role": "user", "content": TestFirstPromptWithLLMGeneratedTests.USER_PROMPT.format(
+                **context, test_template=test_template)}
         ]
 
 class StepByStepPromptWithLLMGeneratedTests(BasePrompt):
     SYSTEM_PROMPT = (
-        "You are a code translation assistant who breaks down complex tasks into manageable steps and prioritizes test-driven development (TDD). "
-        "You ensure each step is correct before proceeding to the next."
-        "Generate tests first, then translate {source_language} code to {target_language} step by step."
-        "Your primary goal is to translate {source_language} code to {target_language} accurately and passes all test cases. "
+        "You are a code translation assistant who who uses a step-by-step approach and follows test-driven development (TDD). "
+        "Your objective is to translate {source_language} code into {target_language} code accurately and passes all provided test cases. "
+        "First, translate the test cases to corresponding {target_language} tests. "
+        "Then, use those test cases as specifications to translate the code into {target_language}. "
+        "You verify each step before proceeding to ensure correctness."
+        "Ensure the final translation passes all the generated tests. "
+        "Return tests and translated code using TEST_BEGIN/END and CODE_BEGIN/END markers."
     )
 
     USER_PROMPT = (
-        "Translate the following {source_language} code to {target_language} using a step-by-step approach:"
-        "{source_language} code:\n"
-        "\n{code}\n"
-        "\n{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
+        "Translate the following {source_language} test cases to {target_language}:\n\n"
+        "{source_language} test cases:\n\n{test_cases}\n"
+        "{test_template}\n\n"
+        "Then, use the translated test cases as requirements, translate this {source_language} code to {target_language}:\n\n"
+        "{code}\n\n"
+        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
         "Follow these steps:\n"
-        "1. Analyze the {source_language} code to generate thorough test cases in {target_language}.\n"
-        "2. Analyze the test cases to understand the expected behavior.\n"
-        "3. Identify the key components and logic in the {source_language} code.\n"
-        "4. Translate each component to their {target_language} equivalents.\n"
-        "5. Write the {target_language} translation in the provided section.\n"
-        "6. Verify that you translation is executable and passes all test cases.\n"
+        "1. Translate {source_language} test cases to {target language} test cases \n"
+        "2. Analyze the translated test cases to determine the expected behavior.\n"
+        "3. Break down the logic of the source code.\n"
+        "4. Translate each logical component into {target_language}.\n"
+        "5. Combine components into the final function.\n"
+        "6. Ensure your translation is syntactically correct and passes all test cases.\n\n"
+        "Return only the translated code without additional comments or explanations."
+        "Wrap the results as follows:\n"
+        "- Enclose test cases with TEST_BEGIN and TEST_END\n"
+        "- Enclose the translated code with CODE_BEGIN and CODE_END\n"
         "Return only the translated code without additional comments or explanations."
     )
 
     @staticmethod
     def prompt(context):
+        test_template = InitialPromptWithLLMGeneratedTests.get_test_framework_instructions(context["target_language"])
         return [
             {"role": "system", "content": StepByStepPromptWithLLMGeneratedTests.SYSTEM_PROMPT.format(
                 source_language=context["source_language"],
                 target_language=context["target_language"]
             )},
-            {"role": "user", "content": StepByStepPromptWithLLMGeneratedTests.USER_PROMPT.format(**context)}
+            {"role": "user", "content": StepByStepPromptWithLLMGeneratedTests.USER_PROMPT.format(
+                **context, test_template=test_template)}
         ]
