@@ -8,7 +8,7 @@ class DatasetTestTranslator(CodeTranslator):
     def get_output_paths(self, llm_name: str, strategy_name: str) -> tuple:
         output_dir, results_file = self.get_base_output_paths(llm_name, strategy_name)
         file_extension = get_file_extension(self.target_language)
-        file_path = os.path.join(output_dir, f"main.{file_extension}")
+        file_path = os.path.join(output_dir, "Main.java" if self.target_language == "Java" else f"main.{file_extension}")
         return output_dir, results_file, file_path
 
     def write_code_and_tests(self, output_dir: str, file_path: str, code: str, tests: str) -> None:

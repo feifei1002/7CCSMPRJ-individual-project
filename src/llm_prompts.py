@@ -26,12 +26,17 @@ class InitialPromptWithLLMGeneratedTests(BasePrompt):
     def get_test_framework_instructions(target_language):
         if target_language == "Java":
             return (
-                "For Java tests, strictly use JUnit 5\n"
-                # "- import org.junit.jupiter.api.Test\n"
-                # "- import static org.junit.jupiter.api.Assertions.*\n"
-                # "- Use @Test annotation (no modifiers)\n"
-                # "- Use non-public test methods\n"
-                # "- Use modern assertions (assertEquals, assertAll, assertThrows)"
+                "Return the translated tests in this structure:\n"
+                "TEST_BEGIN\n"
+                "import org.junit.jupiter.api.Test;\n"
+                "import static org.junit.jupiter.api.Assertions.*;\n\n"
+                "public class #CLASS_NAME {\n"
+                "    // Your test methods here\n"
+                # "    // Each test method should:\n"
+                # "    // - Use @Test annotation\n"
+                # "    // - Use assertions (assertEquals, assertTrue, etc.)\n"
+                "}\n"
+                "TEST_END"
             )
         elif target_language == "Python":
             return (
@@ -41,7 +46,7 @@ class InitialPromptWithLLMGeneratedTests(BasePrompt):
                 "from solution import *\n\n"
                 "class TestSolution(unittest.TestCase):\n"
                 "    # Your test methods here\n"
-                "    # Each test method should:\n"
+                # "    # Each test method should:\n"
                 # "    # - Start with 'test_'\n"
                 # "    # - Be properly indented (4 spaces)\n"
                 # "    # - Use unittest assertions (assertEqual, assertTrue, etc.)\n\n"
