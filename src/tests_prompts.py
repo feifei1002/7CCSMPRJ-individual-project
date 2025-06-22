@@ -11,7 +11,7 @@ class GenerateTestCasesPromptJava(TestBasePrompt):
     )
 
     USER_PROMPT = (
-        "Write comprehensive test cases for the following Java code in JUnit 5. "
+        "Write 5 comprehensive test cases for the following Java code in JUnit 5. "
         "Ensure that the tests cover all edge cases and functionalities. "
         "Java code:\n"
         "\n{code}\n"
@@ -33,7 +33,7 @@ class GenerateTestCasesPromptPython(TestBasePrompt):
     )
 
     USER_PROMPT = (
-        "Write comprehensive test cases for the following Python code in unittest. "
+        "Write 5 comprehensive test cases for the following Python code in unittest. "
         "Ensure that the tests cover all edge cases and functionalities. "
         "Python code:\n"
         "\n{code}\n"

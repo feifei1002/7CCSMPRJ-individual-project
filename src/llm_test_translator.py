@@ -51,17 +51,17 @@ class LLMTestTranslator(CodeTranslator):
 
         return solution_code, test_code
 
-    def write_code_and_tests(self, output_dir: str, code: str, tests: str) -> None:
+    def write_code_and_tests(self, output_dir: str, translated_code: str, source_tests: str) -> None:
         # Extract marked sections from the code
-        solution_code, test_code = self.extract_marked_sections(code)
-        clean_tests = self.clean_code(tests)
+        solution_code, translated_tests = self.extract_marked_sections(translated_code)
+        clean_tests = self.clean_code(translated_tests)
 
         if self.target_language == "Java":
             # Get class name from solution code
             class_name = self.get_class_name(solution_code)
             # Generate file names based on class name
             solution_path = os.path.join(output_dir, f"{class_name}.java")
-            test_class_name = self.get_test_class_name(tests)
+            test_class_name = self.get_test_class_name(clean_tests)
             test_path = os.path.join(output_dir, f"{test_class_name}.java")
         else:
             solution_path = os.path.join(output_dir, "solution.py")
@@ -85,7 +85,7 @@ class LLMTestTranslator(CodeTranslator):
 
                     # Generate test cases
                     test_gen_context = {"code": source_code}
-                    test_gen_prompt = self.test_gen_prompts[self.target_language]
+                    test_gen_prompt = self.test_gen_prompts[self.source_language]
                     test_gen_messages = test_gen_prompt.prompt(test_gen_context)
                     generated_tests = llm.generate(test_gen_messages)
 

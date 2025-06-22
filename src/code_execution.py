@@ -2,13 +2,11 @@ import os
 import re
 from subprocess import run, PIPE
 
-
 def execute_code_and_tests(file_path, language, test_dataset, index=0):
     """
     Execute code and run tests with improved compilation and execution checking.
     """
 
-    print(f"\nExecuting file: {file_path}")
     print(f"Language: {language}")
     execution_result = {
         "compilation_success": False,
@@ -92,7 +90,6 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                     return execution_result
                 try:
                     run_cmd = ["java", "-cp", dir_path, "Main"]
-                    print(f"Running command: {' '.join(run_cmd)}")  # Debug print
                     p = run(run_cmd, capture_output=True, text=True)
                     execution_result["output"] = p.stdout
                     execution_result["tests_passed"] = p.returncode == 0
@@ -104,48 +101,56 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
             else:
                 junit_jar = "../lib/junit-platform-console-standalone-1.13.0.jar"
                 java_files = [f for f in os.listdir(dir_path) if f.endswith('.java') and f != 'Main.java']
-                source_file = next(f for f in java_files if not f.endswith('Test.java'))
-                test_file = next(f for f in java_files if f.endswith('Test.java'))
+                source_file = next(f for f in java_files if not f.endswith('Test.java') or f.startswith('Test'))
+                test_file = next(f for f in java_files if f.endswith('Test.java') or f.startswith('Test'))
 
                 # Compile Java code
-                compile_cmd = ["javac", "-cp", junit_jar,
-                               os.path.join(dir_path, source_file),
-                               os.path.join(dir_path, test_file)]
-                print(f"Running compilation command: {' '.join(compile_cmd)}")  # Debug print
-                p = run(compile_cmd, capture_output=True, text=True)
-                execution_result["compilation_success"] = p.returncode == 0
+                compile_source_cmd = ["javac", os.path.join(dir_path, source_file)]
+                print(f"Compile source file: {' '.join(compile_source_cmd)}")  # Debug print
+                p_source = run(compile_source_cmd, capture_output=True, text=True)
+                execution_result["compilation_success"] = p_source.returncode == 0
 
                 if not execution_result["compilation_success"]:
-                    execution_result["error"] = p.stderr
+                    execution_result["error"] = p_source.stderr
                     return execution_result
 
-                # Run tests if compilation successful
-                if file_path.endswith('.java') and 'Main.java' not in file_path:
-                    try:
-                        test_cmd = ["java", "-jar", junit_jar,
-                                    "--class-path", dir_path,
-                                    "--scan-class-path"]
-                        current_dir = os.getcwd()
-                        os.chdir(dir_path)
-                        p = run(test_cmd, capture_output=True, text=True)
-                        os.chdir(current_dir)
-                        output = p.stdout + p.stderr
-                        execution_result["results"] = output
+                # Compile test code
+                compile_test_cmd = ["javac", "-cp", junit_jar,
+                                    os.path.join(dir_path, source_file),
+                                    os.path.join(dir_path, test_file)]
+                print(f"Compile with tests: {' '.join(compile_test_cmd)}")  # Debug print
+                p_test = run(compile_test_cmd, capture_output=True, text=True)
+                if p_test.returncode != 0:
+                    execution_result["test_error"] = f"Compilation error: {p_test.stderr.strip()}"
+                    execution_result["tests_passed"] = False
+                    return execution_result
 
-                        # Parse test results
-                        tests_found = re.search(r'\[(\s*\d+) tests found\s*\]', output)
-                        tests_passed = re.search(r'\[(\s*\d+) tests successful\s*\]', output)
-                        if tests_found and tests_passed:
-                            total = int(tests_found.group(1))
-                            passed = int(tests_passed.group(1))
-                            execution_result["test_stats"] = f"{passed}/{total}"
-                            execution_result["tests_passed"] = passed == total
+                try:
+                    test_cmd = ["java", "-jar", junit_jar,
+                                "--class-path", dir_path,
+                                "--scan-class-path"]
+                    current_dir = os.getcwd()
+                    os.chdir(dir_path)
+                    p = run(test_cmd, capture_output=True, text=True)
+                    os.chdir(current_dir)
+                    output = p.stdout + p.stderr
+                    execution_result["results"] = output
 
-                        if not execution_result["tests_passed"]:
-                            execution_result["test_error"] = output
-                    except Exception as e:
-                        execution_result["test_error"] = f"Test execution error: {str(e)}"
-                        execution_result["tests_passed"] = False
+                    # Parse test results
+                    tests_found = re.search(r'\[(\s*\d+) tests found\s*\]', output)
+                    tests_passed = re.search(r'\[(\s*\d+) tests successful\s*\]', output)
+                    if tests_found and tests_passed:
+                        total = int(tests_found.group(1))
+                        passed = int(tests_passed.group(1))
+                        execution_result["test_stats"] = f"{passed}/{total}"
+                        execution_result["tests_passed"] = passed == total
+
+                    test_failed = re.search(r'Failures \(\d+\):.*?(?=Test run finished)', output, re.DOTALL)
+                    if not execution_result["tests_passed"]:
+                        execution_result["test_error"] = test_failed.group(0) if test_failed else output
+                except Exception as e:
+                    execution_result["test_error"] = f"Test execution error: {str(e)}"
+                    execution_result["tests_passed"] = False
 
     except Exception as e:
         execution_result["compilation_success"] = False
@@ -153,14 +158,25 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
 
 
     finally:
-        # Clean up generated class files for Java
-        if language == "Java":
-            for f in os.listdir(dir_path):
-                if f.endswith('.class'):
-                    try:
+        try:
+            if language == "Java":
+                # Remove .class files and Java source files
+                for f in os.listdir(dir_path):
+                    if f.endswith(('.class', '.java')):
                         os.remove(os.path.join(dir_path, f))
-                    except:
-                        pass
+            elif language == "Python":
+                # Remove .pyc files and Python source files
+                for f in os.listdir(dir_path):
+                    if f.endswith(('.pyc', '.py')):
+                        os.remove(os.path.join(dir_path, f))
+                # Remove __pycache__ directory
+                pycache_dir = os.path.join(dir_path, "__pycache__")
+                if os.path.exists(pycache_dir):
+                    for f in os.listdir(pycache_dir):
+                        os.remove(os.path.join(pycache_dir, f))
+                    os.rmdir(pycache_dir)
+        except Exception as e:
+            print(f"Warning: Failed to clean up some files: {str(e)}")
 
     print(f"Execution result: {execution_result}\n")
     return execution_result
