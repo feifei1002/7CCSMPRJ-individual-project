@@ -1,4 +1,13 @@
+from src.config import LLMConfig
+
+
 class BasePrompt:
+    @staticmethod
+    def get_llm_model():
+        if LLMConfig.MODE == LLMConfig.UNIFIED_MODEL:
+            return LLMConfig.DEFAULT_MODEL
+        return LLMConfig.TRANSLATION_MODEL
+
     @staticmethod
     def prompt(context):
         raise NotImplementedError

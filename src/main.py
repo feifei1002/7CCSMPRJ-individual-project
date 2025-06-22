@@ -28,7 +28,7 @@ def run_dataset_translation():
         # StepByStepPromptWithProvidedTests
     ]
 
-    translator = DatasetTestTranslator("Python", "Java", llm_models, prompt_strategies)
+    translator = DatasetTestTranslator("Java", "Python", llm_models, prompt_strategies)
     translator.translate()
 
 
@@ -50,13 +50,13 @@ def run_llm_test_translation():
         "Java": GenerateTestCasesPromptJava
     }
 
-    translator = LLMTestTranslator("Python", "Java", llm_models, prompt_strategies, test_gen_prompts)
+    translator = LLMTestTranslator("Java", "Python", llm_models, prompt_strategies, test_gen_prompts)
     translator.translate()
 
 
 def main():
-    # print("Starting translation with dataset-provided tests...")
-    # run_dataset_translation()
+    print("Starting translation with dataset-provided tests...")
+    run_dataset_translation()
 
     print("\nStarting translation with LLM-generated tests...")
     run_llm_test_translation()

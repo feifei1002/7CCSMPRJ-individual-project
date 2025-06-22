@@ -9,31 +9,19 @@ PROJECT_DIR = os.getcwd()
 LANGUAGE_MAP = {
     "Python": "python",
     "Java": "java",
-    "JavaScript": "js",
-    "C++": "cpp",
-    "Go": "go",
 }
 
 FILE_EXTENSION = {
     "Python": "py",
     "Java": "java",
-    "JavaScript": "js",
-    "C++": "cpp",
-    "Go": "go",
 }
 
-EXECUTION_COMMANDS = {
-    "Python": "python3",
-    "Java": "java",
-    "JavaScript": "node",
-    "C++": "g++",
-    "Go": "go run",
-}
+class LLMConfig:
+    UNIFIED_MODEL = "unified"  # Use same model for all prompts
+    SPLIT_MODEL = "split"  # Use different models for different prompts
 
-FILE_TEMPLATES = {
-    "Java": "{code}\n\n{test_cases}\n}",
-    "JavaScript": "{code}\n\n{test_cases}",
-    "C++": "#include <iostream>\n{code}\n\n{test_cases}",
-    "Go": "package main\n\n{code}\n\n{test_cases}",
-    "Python": "{code}\n\n{test_cases}"
-}
+    # Default configurations
+    MODE = UNIFIED_MODEL
+    DEFAULT_MODEL = "deepseek"
+    TEST_MODEL = "codestral"
+    TRANSLATION_MODEL = "deepseek"

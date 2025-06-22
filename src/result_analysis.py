@@ -1,4 +1,6 @@
 import os
+import re
+
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
 
@@ -33,16 +35,56 @@ def parse_file_info(filename):
         llm = model_mapping.get(llm, llm)
 
         # Everything else is the prompt strategy
-        prompt = '_'.join(name_parts[:-1])
-
-        return prompt, llm, source_language, target_language
+        txt_file = '_'.join(name_parts[:-1])
+        return txt_file, llm, source_language, target_language
 
     except (IndexError, StopIteration):
         print(f"Error parsing filename: {filename}")
         return None, None, None, None
 
+def calculate_llm_generated_test_rate(filename):
+    total_problems = 0
+    successful_compilations = 0
+    tests_passed_count = 0
+    total_tests_count = 0
+    failed_compilations = 0
 
-def calculate_success_rate(filename):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, '..', filename)
+
+    try:
+        with open(file_path, 'r') as f:
+            content = f.read()
+            problems = content.split('--------------------------------------------------')
+
+            for problem in problems:
+                if not problem.strip():
+                    continue
+                total_problems += 1
+                test_pattern = r"Tests passed: (\d+)/(\d+)"
+                matches = re.search(test_pattern, problem)
+                if matches:
+                    passed = int(matches.group(1))
+                    total = int(matches.group(2))
+                    tests_passed_count += passed
+                    total_tests_count += total
+                if "Compilation successful: True" in problem:
+                    successful_compilations += 1
+                elif "Compilation successful: False" in problem:
+                    failed_compilations += 1
+
+        success_rate = (successful_compilations / total_problems) * 100 if total_problems > 0 else 0
+        tests_passed_rate = (tests_passed_count / total_tests_count) * 100 if total_tests_count > 0 else 0
+        return (success_rate, tests_passed_rate, total_problems,
+                successful_compilations, failed_compilations,
+                tests_passed_count, total_tests_count - tests_passed_count)
+    except FileNotFoundError:
+        return None, 0, 0, 0, 0, 0, 0
+    except Exception as e:
+        print(f"Error processing {filename}: {str(e)}")
+        return None, 0, 0, 0, 0, 0, 0
+
+def calculate_provided_test_rate(filename):
     total_problems = 0
     successful_compilations = 0
     tests_passed = 0
@@ -129,7 +171,7 @@ def main():
     strategy_tables = {}
 
     # Initialize field names for all tables
-    field_names = ["LLM Model", "Compile Succeed Rate (%)", "Success/Total", "Fail/Total", "Tests Passed Rate (%)", "Tests Passed/Total", "Tests Failed/Total"]
+    field_names = ["LLM Model", "Compile Success Rate (%)", "Success/Total", "Fail/Total", "Tests Passed Rate (%)", "Tests Passed/Total", "Tests Failed/Total"]
 
     # Walk through directories to find result files
     results = []
@@ -144,9 +186,13 @@ def main():
                     info = parse_file_info(rel_path)
                     if all(info):
                         prompt_strategy, llm_model, source_lang, target_lang = info
-                        success_rate, test_pass_rate, total, successful, failed, test_passed, test_failed = calculate_success_rate(rel_path)
+                        if "LLMGeneratedTests" in rel_path:
+                            rates = calculate_llm_generated_test_rate(rel_path)
+                        else:
+                            rates = calculate_provided_test_rate(rel_path)
 
-                        if success_rate is not None:
+                        if rates[0] is not None:
+                            success_rate, test_pass_rate, total, successful, failed, test_passed, test_failed = rates
                             direction = f"{source_lang} to {target_lang}"
                             results.append({
                                 'strategy': prompt_strategy,
@@ -182,8 +228,8 @@ def main():
             f"{result['successful']}/{result['total']}",
             f"{result['failed']}/{result['total']}",
             f"{result['test_pass_rate']:.2f}",
-            f"{result['tests_passed']}/{result['total']}",
-            f"{result['tests_failed']}/{result['total']}"
+            f"{result['tests_passed']}/{result['tests_failed'] + result['tests_passed']}",
+            f"{result['tests_failed']}/{result['tests_failed'] + result['tests_passed']}"
         ])
 
     # Create output directory for tables if it doesn't exist
