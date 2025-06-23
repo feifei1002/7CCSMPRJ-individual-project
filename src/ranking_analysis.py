@@ -1,4 +1,5 @@
 import os
+import re
 from collections import defaultdict
 from typing import List, Dict, Tuple
 
@@ -29,24 +30,33 @@ class RankingAnalysis:
                 })
 
     def _calculate_rates(self, filepath: str) -> Tuple[float, float]:
-        total = successful_compilations = successful_tests = 0
+        total = successful_compilations = 0
+        tests_passed_count = total_tests_count = 0
 
         with open(filepath, 'r') as f:
             content = f.read()
-            problems = content.split('-' * 50)
+            problems = content.split('Problem ')
+            problems = [p for p in problems if p.strip() and ':' in p]
+            total = len(problems)
 
             for problem in problems:
-                if not problem.strip():
-                    continue
-
-                total += 1
+                if "LLMGeneratedTests" in filepath:
+                    test_pattern = r"Tests passed: (\d+)/(\d+)"
+                    matches = re.search(test_pattern, problem)
+                    if matches:
+                        passed = int(matches.group(1))
+                        total_tests = int(matches.group(2))
+                        tests_passed_count += passed
+                        total_tests_count += total_tests
+                else:
+                    if 'Tests passed: True' in problem:
+                        tests_passed_count += 1
+                    total_tests_count += 1
                 if 'Compilation successful: True' in problem:
                     successful_compilations += 1
-                if 'Tests passed: True' in problem:
-                    successful_tests += 1
 
         success_rate = (successful_compilations / total) * 100 if total > 0 else 0
-        test_pass_rate = (successful_tests / total) * 100 if total > 0 else 0
+        test_pass_rate = (tests_passed_count / total_tests_count) * 100 if total > 0 else 0
 
         return success_rate, test_pass_rate
 
@@ -115,7 +125,7 @@ class RankingAnalysis:
 
     def _create_strategy_ranking_table(self, title: str, stats: List[Dict]) -> str:
         table = PrettyTable()
-        table.field_names = ["Rank", "Strategy", "Success Rate", "Test Pass Rate"]
+        table.field_names = ["Rank", "Strategy", "Compile Success Rate", "Test Passed Rate"]
 
         sorted_stats = sorted(
             stats,
@@ -135,7 +145,7 @@ class RankingAnalysis:
 
     def _create_model_performance_table(self, strategy: str, stats: List[Dict]) -> str:
         table = PrettyTable()
-        table.field_names = ["Rank", "Model", "Success Rate", "Test Pass Rate"]
+        table.field_names = ["Rank", "Model", "Compile Success Rate", "Test Passed Rate"]
 
         sorted_stats = sorted(
             stats,
@@ -244,8 +254,8 @@ class RankingAnalysis:
             plt.ylim(0, 100)
 
             # Create bars
-            plt.bar(x - width / 2, success_rates, width, label='Success Rate', color='black')
-            plt.bar(x + width / 2, test_rates, width, label='Test Pass Rate', color='lightgrey')
+            plt.bar(x - width / 2, success_rates, width, label='Compile Success Rate', color='black')
+            plt.bar(x + width / 2, test_rates, width, label='Test Passed Rate', color='lightgrey')
 
             # Customize the plot
             plt.xlabel('Large Language Models', fontfamily='Arial', weight='bold')

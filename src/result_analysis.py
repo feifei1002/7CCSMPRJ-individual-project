@@ -55,12 +55,11 @@ def calculate_llm_generated_test_rate(filename):
     try:
         with open(file_path, 'r') as f:
             content = f.read()
-            problems = content.split('--------------------------------------------------')
+            problems = content.split('Problem ')
+            problems = [p for p in problems if p.strip() and ':' in p]
+            total_problems = len(problems)
 
             for problem in problems:
-                if not problem.strip():
-                    continue
-                total_problems += 1
                 test_pattern = r"Tests passed: (\d+)/(\d+)"
                 matches = re.search(test_pattern, problem)
                 if matches:
