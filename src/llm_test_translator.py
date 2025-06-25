@@ -1,5 +1,4 @@
 import os
-import re
 from typing import List, Type
 
 from src.code_translator import CodeTranslator
@@ -11,27 +10,8 @@ class LLMTestTranslator(CodeTranslator):
         super().__init__(source_lang, target_lang, llm_models, prompt_strategies)
         self.test_gen_prompts = test_gen_prompts
 
-    @staticmethod
-    def get_class_name(code: str) -> str:
-        """Extract the main class name from Java code"""
-        # Look for public class declaration
-        match = re.search(r'public\s+class\s+(\w+)', code)
-        if match:
-            return match.group(1)
-        # Fallback to any class declaration
-        match = re.search(r'class\s+(\w+)', code)
-        return match.group(1) if match else "Solution"
-
-    @staticmethod
-    def get_test_class_name(test_code: str) -> str:
-        match = re.search(r'class\s+(\w+)', test_code)
-        if match:
-            return match.group(1)
-        raise ValueError("Could not find class name in test code")
-
     def get_output_paths(self, llm_name: str, strategy_name: str) -> tuple:
         output_dir, results_file = self.get_base_output_paths(llm_name, strategy_name)
-        # Return the solution.py path as the file_path for execution
         if self.target_language == "Java":
             first_code = self.code_dataset[0]["canonical_solution"]
             class_name = self.get_class_name(first_code)
@@ -40,48 +20,15 @@ class LLMTestTranslator(CodeTranslator):
             file_path = os.path.join(output_dir, "solution.py")
         return output_dir, results_file, file_path
 
-    def extract_marked_sections(self, text: str) -> tuple:
-        # Extract code between TEST_BEGIN and TEST_END
-        test_match = re.search(r'TEST_BEGIN\n(.*?)\nTEST_END', text, re.DOTALL)
-        test_code = test_match.group(1).strip() if test_match else ""
-
-        # Extract code between CODE_BEGIN and CODE_END
-        code_match = re.search(r'CODE_BEGIN\n(.*?)\nCODE_END', text, re.DOTALL)
-        solution_code = code_match.group(1).strip() if code_match else ""
-
-        return solution_code, test_code
-
-    def write_code_and_tests(self, output_dir: str, translated_code: str, source_tests: str) -> None:
-        # Extract marked sections from the code
-        solution_code, translated_tests = self.extract_marked_sections(translated_code)
-        clean_tests = self.clean_code(translated_tests)
-
-        if self.target_language == "Java":
-            # Get class name from solution code
-            class_name = self.get_class_name(solution_code)
-            # Generate file names based on class name
-            solution_path = os.path.join(output_dir, f"{class_name}.java")
-            test_class_name = self.get_test_class_name(clean_tests)
-            test_path = os.path.join(output_dir, f"{test_class_name}.java")
-        else:
-            solution_path = os.path.join(output_dir, "solution.py")
-            test_path = os.path.join(output_dir, "test_cases.py")
-
-        # Write files
-        with open(solution_path, "w") as f:
-            f.write(solution_code)
-        with open(test_path, "w") as f:
-            f.write(clean_tests)
-
-
     def translate(self):
         for llm_name, llm in self.llm_models.items():
             for strategy in self.prompt_strategies:
                 output_dir, results_file, file_path = self.get_output_paths(llm_name, strategy.__name__)
 
-                for index, (code, test) in enumerate(zip(self.code_dataset, self.test_dataset)):
-                    source_code = code.get("canonical_solution")
-                    declaration = test.get("declaration")
+                for index, (source, target) in enumerate(zip(self.code_dataset, self.test_dataset)):
+                    source_declaration = source.get("declaration")
+                    source_code = source.get("canonical_solution")
+                    target_declaration = target.get("declaration")
 
                     # Generate test cases
                     test_gen_context = {"code": source_code}
@@ -89,11 +36,13 @@ class LLMTestTranslator(CodeTranslator):
                     test_gen_messages = test_gen_prompt.prompt(test_gen_context)
                     generated_tests = llm.generate(test_gen_messages)
 
+                    # Prepare context for translation
                     context = {
                         "source_language": self.source_language,
                         "target_language": self.target_language,
-                        "declaration": declaration,
+                        "source_declaration": source_declaration,
                         "code": source_code,
+                        "target_declaration": target_declaration,
                         "test_cases": generated_tests,
                         "source_language_lower": self.source_language.lower(),
                         "target_language_lower": self.target_language.lower(),

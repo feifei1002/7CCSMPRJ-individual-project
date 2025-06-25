@@ -94,7 +94,7 @@ class GeminiLLM(BaseLLM):
         return response.choices[0].message.content.strip()
 
 class DeepseekLLM(BaseLLM):
-    def __init__(self, model_name="deepseek/deepseek-chat-v3-0324"):
+    def __init__(self, model_name="deepseek/deepseek-chat-v3-0324:free"):
         self.client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         self.model_name = model_name
 

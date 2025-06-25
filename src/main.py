@@ -1,8 +1,9 @@
-from src.llms import DeepseekLLM
+from src.llms import DeepseekLLM, MistralLLM, OpenAILLM, ClaudeLLM, GeminiLLM
+from src.multi_llm_test_translator import MultiLLMTestTranslator
 from src.prompts import (
     InitialPromptWithProvidedTests,
     TestFirstPromptWithProvidedTests,
-    StepByStepPromptWithProvidedTests
+    StepByStepPromptWithProvidedTests, NoTestPrompt
 )
 from src.llm_prompts import (
     InitialPromptWithLLMGeneratedTests,
@@ -23,9 +24,10 @@ def run_dataset_translation():
         "DeepSeek": DeepseekLLM()
     }
     prompt_strategies = [
+        # NoTestPrompt,
         InitialPromptWithProvidedTests,
-        # TestFirstPromptWithProvidedTests,
-        # StepByStepPromptWithProvidedTests
+        TestFirstPromptWithProvidedTests,
+        StepByStepPromptWithProvidedTests
     ]
 
     translator = DatasetTestTranslator("Java", "Python", llm_models, prompt_strategies)
@@ -42,8 +44,8 @@ def run_llm_test_translation():
     }
     prompt_strategies = [
         InitialPromptWithLLMGeneratedTests,
-        # TestFirstPromptWithLLMGeneratedTests,
-        # StepByStepPromptWithLLMGeneratedTests
+        TestFirstPromptWithLLMGeneratedTests,
+        StepByStepPromptWithLLMGeneratedTests
     ]
     test_gen_prompts = {
         "Python": GenerateTestCasesPromptPython,
@@ -53,13 +55,44 @@ def run_llm_test_translation():
     translator = LLMTestTranslator("Java", "Python", llm_models, prompt_strategies, test_gen_prompts)
     translator.translate()
 
+def run_multi_llm_test_translation():
+    translation_llm_models = {
+        # "Mistral": MistralLLM(),
+        "OpenAI": OpenAILLM(),
+        # "Claude": ClaudeLLM(),
+        # "Gemini": GeminiLLM(),
+        # "DeepSeek": DeepseekLLM()
+    }
+    test_generation_llm_models = {
+        # "Mistral": MistralLLM(),
+        # "OpenAI": OpenAILLM(),
+        # "Claude": ClaudeLLM(),
+        # "Gemini": GeminiLLM(),
+        "DeepSeek": DeepseekLLM()
+    }
+    prompt_strategies = [
+        InitialPromptWithLLMGeneratedTests,
+        TestFirstPromptWithLLMGeneratedTests,
+        StepByStepPromptWithLLMGeneratedTests
+    ]
+    test_gen_prompts = {
+        "Python": GenerateTestCasesPromptPython,
+        "Java": GenerateTestCasesPromptJava
+    }
+
+    translator = MultiLLMTestTranslator("Java", "Python", translation_llm_models, test_generation_llm_models, prompt_strategies, test_gen_prompts)
+    translator.translate()
+
 
 def main():
     print("Starting translation with dataset-provided tests...")
     run_dataset_translation()
 
-    print("\nStarting translation with LLM-generated tests...")
+    print("\nStarting translation with same LLM-generated tests...")
     run_llm_test_translation()
+
+    print("\nStarting translation with different LLM-generated tests...")
+    run_multi_llm_test_translation()
 
 
 if __name__ == "__main__":

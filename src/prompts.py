@@ -10,8 +10,10 @@ class NoTestPrompt(BasePrompt):
     )
     USER_PROMPT = (
         "Translate the following {source_language} code to {target_language} while ensuring it passes the provided test cases.\n\n "
-        "{source_language} code:\n\n{code}\n\n"
-        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
+        "{source_language} code:"
+        "{source_declaration}\n"
+        "\n{code}\n\n"
+        "{target_declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
         "Return only the translated code without additional comments or explanations."
     )
 
@@ -33,9 +35,11 @@ class InitialPromptWithProvidedTests(BasePrompt):
     )
     USER_PROMPT = (
         "Translate the following {source_language} code to {target_language}, ensuring it passes the provided test cases.\n\n"
-        "{source_language} code:\n\n{code}\n\n"
+        "{source_language} code:"
+        "{source_declaration}\n"
+        "\n{code}\n\n"
         "{target_language} test cases:\n\n{test_cases}\n\n"
-        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
+        "{target_declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
         "Return only the translated code without additional comments or explanations."
     )
 
@@ -58,8 +62,10 @@ class TestFirstPromptWithProvidedTests(BasePrompt):
     USER_PROMPT = (
         "Start by understanding these {target_language} test cases:\n\n{test_cases}\n\n"
         "Now, based on this expected behavior, translate this following {source_language} code to {target_language}:\n\n"
-        "{source_language} code:\n\n{code}\n\n"
-        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
+        "{source_language} code:"
+        "{source_declaration}\n"
+        "\n{code}\n\n"
+        "{target_declaration}\n    # INSERT TRANSLATED CODE HERE\n"
         "Return only the translated code without additional comments or explanations.")
 
     @staticmethod
@@ -81,9 +87,11 @@ class StepByStepPromptWithProvidedTests(BasePrompt):
 
     USER_PROMPT = (
         "Translate the following {source_language} code to {target_language} using a step-by-step approach:\n\n"
-        "{source_language} code:\n\n{code}\n"
+        "{source_language} code:"
+        "{source_declaration}\n"
+        "\n{code}\n\n"
         "{target_language} test cases:\n\n{test_cases}\n"
-        "{declaration}\n    # INSERT TRANSLATED CODE HERE\n"
+        "{target_declaration}\n    # INSERT TRANSLATED CODE HERE\n"
         "Follow these steps:\n"
         "1. Analyze the test cases to determine the expected behavior.\n"
         "2. Break down the logic of the source code.\n"
