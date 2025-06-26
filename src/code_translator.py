@@ -78,8 +78,8 @@ class CodeTranslator:
             test_class_name = self.get_test_class_name(clean_tests)
             test_path = os.path.join(output_dir, f"{test_class_name}.java")
         else:
-            solution_path = os.path.join(output_dir, "solution.py")
-            test_path = os.path.join(output_dir, "test_cases.py")
+            solution_path = os.path.join(output_dir, f"solution.{get_file_extension(self.target_language)}")
+            test_path = os.path.join(output_dir, f"test_cases.{get_file_extension(self.target_language)}")
 
         with open(solution_path, "w") as f:
             f.write(solution_code)
@@ -99,6 +99,7 @@ class CodeTranslator:
             if compilation_error:
                 f.write(f"Compilation error: {compilation_error}\n")
             if test_error:
+                test_error = test_error.encode("ascii", "replace").decode("ascii")
                 f.write(f"Test error: {test_error}\n")
             f.write("-" * 50 + "\n")
 

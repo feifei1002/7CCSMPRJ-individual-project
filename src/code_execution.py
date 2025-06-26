@@ -152,6 +152,50 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                     execution_result["test_error"] = f"Test execution error: {str(e)}"
                     execution_result["tests_passed"] = False
 
+        elif language == "JavaScript":
+            dir_path = os.path.dirname(file_path)
+            project_root = os.path.dirname(os.path.dirname(file_path))
+            compile_cmd = ["node", "--check", file_path]
+            p = run(compile_cmd, capture_output=True, text=True)
+            execution_result["compilation_success"] = p.returncode == 0
+
+            if not execution_result["compilation_success"]:
+                execution_result["compilation_error"] = p.stderr.strip()
+                return execution_result
+
+            if "solution.js" in file_path:
+                try:
+                    test_file = os.path.join(dir_path, "test_cases.js")
+                    test_cmd = ["npx", "jest", "--verbose", test_file]
+                    p = run(test_cmd, capture_output=True, text=True, cwd=project_root, shell=True, encoding='utf-8')
+                    output = p.stdout + p.stderr
+                    test_summary = re.search(r'Tests:\s+(\d+)\s+passed,\s+(\d+)\s+total', output)
+                    if test_summary:
+                        passed = int(test_summary.group(1))
+                        total = int(test_summary.group(2))
+                        execution_result["test_stats"] = f"{passed}/{total}"
+                        execution_result["tests_passed"] = passed == total
+
+                    execution_result["results"] = output
+                    execution_result["compilation_success"] = True
+                    if not execution_result["tests_passed"]:
+                        execution_result["test_error"] = p.stderr.strip() if p.stderr else p.stdout
+                except Exception as e:
+                    execution_result["test_error"] = f"Test execution error: {str(e)}"
+                    execution_result["tests_passed"] = False
+            else:
+                try:
+                    run_cmd = ["node", file_path]
+                    p = run(run_cmd, capture_output=True, text=True)
+                    execution_result["output"] = p.stdout
+                    execution_result["tests_passed"] = p.returncode == 0
+                    if not execution_result["tests_passed"]:
+                        execution_result["test_error"] = p.stderr if p.stderr else p.stdout
+                except Exception as e:
+                    execution_result["test_error"] = f"Execution error: {str(e)}"
+                    execution_result["tests_passed"] = False
+
+
     except Exception as e:
         execution_result["compilation_success"] = False
         execution_result["compilation_error"] = f"Execution error: {str(e)}"

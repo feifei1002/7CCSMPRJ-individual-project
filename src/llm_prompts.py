@@ -1,13 +1,4 @@
-from src.config import LLMConfig
-
-
 class BasePrompt:
-    @staticmethod
-    def get_llm_model():
-        if LLMConfig.MODE == LLMConfig.UNIFIED_MODEL:
-            return LLMConfig.DEFAULT_MODEL
-        return LLMConfig.TRANSLATION_MODEL
-
     @staticmethod
     def prompt(context):
         raise NotImplementedError
@@ -66,6 +57,17 @@ class InitialPromptWithLLMGeneratedTests(BasePrompt):
                 "if __name__ == '__main__':\n"
                 "    unittest.main()\n"
                 "TEST_END"
+            )
+        elif target_language == "JavaScript":
+            return (
+            "Return the translated tests in this structure:\n"
+            "TEST_BEGIN\n"
+            "const { describe, test, expect } = require('@jest/globals');\n"
+            "const solution = require('./solution');\n\n"
+            "describe('Solution Tests', () => {\n"
+            "    // Your test methods here\n"
+            "});\n"
+            "TEST_END"
             )
         return ""
 

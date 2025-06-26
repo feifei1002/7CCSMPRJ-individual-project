@@ -9,19 +9,11 @@ PROJECT_DIR = os.getcwd()
 LANGUAGE_MAP = {
     "Python": "python",
     "Java": "java",
+    "JavaScript": "js",
 }
 
 FILE_EXTENSION = {
     "Python": "py",
     "Java": "java",
+    "JavaScript": "js",
 }
-
-class LLMConfig:
-    UNIFIED_MODEL = "unified"  # Use same model for all prompts
-    SPLIT_MODEL = "split"  # Use different models for different prompts
-
-    # Default configurations
-    MODE = UNIFIED_MODEL
-    DEFAULT_MODEL = "deepseek"
-    TEST_MODEL = "codestral"
-    TRANSLATION_MODEL = "deepseek"

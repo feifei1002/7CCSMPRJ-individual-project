@@ -10,7 +10,8 @@ from src.llm_prompts import (
     TestFirstPromptWithLLMGeneratedTests,
     StepByStepPromptWithLLMGeneratedTests
 )
-from src.tests_prompts import GenerateTestCasesPromptPython, GenerateTestCasesPromptJava
+from src.tests_prompts import GenerateTestCasesPromptPython, GenerateTestCasesPromptJava, \
+    GenerateTestCasesPromptJavaScript
 from src.dataset_translator import DatasetTestTranslator
 from src.llm_test_translator import LLMTestTranslator
 
@@ -26,8 +27,8 @@ def run_dataset_translation():
     prompt_strategies = [
         # NoTestPrompt,
         InitialPromptWithProvidedTests,
-        TestFirstPromptWithProvidedTests,
-        StepByStepPromptWithProvidedTests
+        # TestFirstPromptWithProvidedTests,
+        # StepByStepPromptWithProvidedTests
     ]
 
     translator = DatasetTestTranslator("Java", "Python", llm_models, prompt_strategies)
@@ -44,12 +45,13 @@ def run_llm_test_translation():
     }
     prompt_strategies = [
         InitialPromptWithLLMGeneratedTests,
-        TestFirstPromptWithLLMGeneratedTests,
-        StepByStepPromptWithLLMGeneratedTests
+        # TestFirstPromptWithLLMGeneratedTests,
+        # StepByStepPromptWithLLMGeneratedTests
     ]
     test_gen_prompts = {
         "Python": GenerateTestCasesPromptPython,
-        "Java": GenerateTestCasesPromptJava
+        "Java": GenerateTestCasesPromptJava,
+        "JavaScript": GenerateTestCasesPromptJavaScript
     }
 
     translator = LLMTestTranslator("Java", "Python", llm_models, prompt_strategies, test_gen_prompts)
@@ -57,8 +59,8 @@ def run_llm_test_translation():
 
 def run_multi_llm_test_translation():
     translation_llm_models = {
-        # "Mistral": MistralLLM(),
-        "OpenAI": OpenAILLM(),
+        "Mistral": MistralLLM(),
+        # "OpenAI": OpenAILLM(),
         # "Claude": ClaudeLLM(),
         # "Gemini": GeminiLLM(),
         # "DeepSeek": DeepseekLLM()
@@ -72,12 +74,13 @@ def run_multi_llm_test_translation():
     }
     prompt_strategies = [
         InitialPromptWithLLMGeneratedTests,
-        TestFirstPromptWithLLMGeneratedTests,
-        StepByStepPromptWithLLMGeneratedTests
+        # TestFirstPromptWithLLMGeneratedTests,
+        # StepByStepPromptWithLLMGeneratedTests
     ]
     test_gen_prompts = {
         "Python": GenerateTestCasesPromptPython,
-        "Java": GenerateTestCasesPromptJava
+        "Java": GenerateTestCasesPromptJava,
+        "JavaScript": GenerateTestCasesPromptJavaScript
     }
 
     translator = MultiLLMTestTranslator("Java", "Python", translation_llm_models, test_generation_llm_models, prompt_strategies, test_gen_prompts)

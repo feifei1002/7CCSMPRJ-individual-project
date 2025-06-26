@@ -2,6 +2,7 @@ import os
 from typing import List, Type
 
 from src.code_translator import CodeTranslator
+from src.data_utils import get_file_extension
 
 
 class MultiLLMTestTranslator(CodeTranslator):
@@ -19,7 +20,7 @@ class MultiLLMTestTranslator(CodeTranslator):
             class_name = self.get_class_name(first_code)
             file_path = os.path.join(output_dir, f"{class_name}.java")
         else:
-            file_path = os.path.join(output_dir, "solution.py")
+            file_path = os.path.join(output_dir, f"solution.{get_file_extension(self.target_language)}")
 
         return output_dir, results_file, file_path
 

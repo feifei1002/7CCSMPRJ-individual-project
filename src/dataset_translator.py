@@ -21,7 +21,7 @@ class DatasetTestTranslator(CodeTranslator):
                     source_declaration = source.get("declaration")
                     source_code = source.get("canonical_solution")
                     target_declaration = target.get("declaration")
-                    test_cases = target.get("example_test")
+                    test_cases = target.get("test")
 
                     context = {
                         "source_language": self.source_language,
