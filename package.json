@@ -1,0 +1,17 @@
+{
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/test_cases.js"],
+    "moduleDirectories": ["node_modules", "."],
+    "roots": ["<rootDir>"],
+    "verbose": true
+  },
+  "devDependencies": {
+    "jest": "^30.0.3",
+    "@jest/globals": "^30.0.3"
+  }
+}
