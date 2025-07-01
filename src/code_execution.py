@@ -2,7 +2,7 @@ import os
 import re
 from subprocess import run, PIPE
 
-def execute_code_and_tests(file_path, language, test_dataset, index=0):
+def execute_code_and_tests(file_path: str, language: str, test_dataset: list, index: int, test_count: int = 0):
     """
     Execute code and run tests with improved compilation and execution checking.
     """
@@ -14,7 +14,7 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
         "compilation_error": "",
         "test_error": "",
         "output": "",
-        "test_stats": "0/0"
+        "test_stats": f"0/0"
     }
 
     try:
@@ -50,13 +50,14 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                     # Count total tests from test_cases.py
                     with open(os.path.join(dir_path, "test_cases.py"), "r") as f:
                         test_content = f.read()
-                        total = len([line for line in test_content.split('\n')
+                        test_count = len([line for line in test_content.split('\n')
                                  if line.strip().startswith('def test_')])
+                    execution_result["test_stats"] = f"0/{test_count}"
 
-                    passed = total - failures
+                    passed = test_count - failures
                     execution_result["results"] = output
-                    execution_result["test_stats"] = f"{passed}/{total}"
-                    execution_result["tests_passed"] = passed == total
+                    execution_result["test_stats"] = f"{passed}/{test_count}"
+                    execution_result["tests_passed"] = passed == test_count
                     execution_result["compilation_success"] = True
                     if not execution_result["tests_passed"]:
                         execution_result["test_error"] = p.stderr.strip() if p.stderr else p.stdout
@@ -80,6 +81,7 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
 
         elif language == "Java":
             dir_path = os.path.dirname(os.path.abspath(file_path))
+            # test_count = 0
 
             if "Main.java" in file_path:
                 compile_cmd = ["javac", file_path]
@@ -103,6 +105,12 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                 java_files = [f for f in os.listdir(dir_path) if f.endswith('.java') and f != 'Main.java']
                 source_file = next(f for f in java_files if not f.endswith('Test.java') or f.startswith('Test'))
                 test_file = next(f for f in java_files if f.endswith('Test.java') or f.startswith('Test'))
+
+                # Count tests in the test file
+                with open(os.path.join(dir_path, test_file)) as f:
+                    test_content = f.read()
+                    test_count = len(re.findall(r'@Test', test_content))
+                execution_result["test_stats"] = f"0/{test_count}"
 
                 # Compile Java code
                 compile_source_cmd = ["javac", os.path.join(dir_path, source_file)]
@@ -137,13 +145,11 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                     execution_result["results"] = output
 
                     # Parse test results
-                    tests_found = re.search(r'\[(\s*\d+) tests found\s*\]', output)
                     tests_passed = re.search(r'\[(\s*\d+) tests successful\s*\]', output)
-                    if tests_found and tests_passed:
-                        total = int(tests_found.group(1))
-                        passed = int(tests_passed.group(1))
-                        execution_result["test_stats"] = f"{passed}/{total}"
-                        execution_result["tests_passed"] = passed == total
+                    if tests_passed:
+                        passed = int(tests_passed.group(1) or 0)
+                        execution_result["test_stats"] = f"{passed}/{test_count}"
+                        execution_result["tests_passed"] = passed == test_count
 
                     test_failed = re.search(r'Failures \(\d+\):.*?(?=Test run finished)', output, re.DOTALL)
                     if not execution_result["tests_passed"]:
@@ -151,6 +157,8 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                 except Exception as e:
                     execution_result["test_error"] = f"Test execution error: {str(e)}"
                     execution_result["tests_passed"] = False
+                    execution_result["test_stats"] = f"0/{test_count}"
+
 
         elif language == "JavaScript":
             dir_path = os.path.dirname(file_path)
@@ -166,15 +174,18 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
             if "solution.js" in file_path:
                 try:
                     test_file = os.path.join(dir_path, "test_cases.js")
+                    with open(test_file) as f:
+                        test_content = f.read()
+                        test_count = len(re.findall(r'test\(|it\(', test_content))
+                    execution_result["test_stats"] = f"0/{test_count}"
                     test_cmd = ["npx", "jest", "--verbose", test_file]
                     p = run(test_cmd, capture_output=True, text=True, cwd=project_root, shell=True, encoding='utf-8')
                     output = p.stdout + p.stderr
-                    test_summary = re.search(r'Tests:\s+(\d+)\s+passed,\s+(\d+)\s+total', output)
+                    test_summary = re.search(r'Tests:\s+(?:(\d+)\s+failed,\s+)?(?:(\d+)\s+passed,\s+)?(\d+)\s+total', output)
                     if test_summary:
-                        passed = int(test_summary.group(1))
-                        total = int(test_summary.group(2))
-                        execution_result["test_stats"] = f"{passed}/{total}"
-                        execution_result["tests_passed"] = passed == total
+                        passed = int(test_summary.group(2) or 0)
+                        execution_result["test_stats"] = f"{passed}/{test_count}"
+                        execution_result["tests_passed"] = passed == test_count
 
                     execution_result["results"] = output
                     execution_result["compilation_success"] = True
@@ -183,6 +194,8 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                 except Exception as e:
                     execution_result["test_error"] = f"Test execution error: {str(e)}"
                     execution_result["tests_passed"] = False
+                    if test_count > 0:
+                        execution_result["test_stats"] = f"0/{test_count}"
             else:
                 try:
                     run_cmd = ["node", file_path]
@@ -195,10 +208,6 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                     execution_result["test_error"] = f"Execution error: {str(e)}"
                     execution_result["tests_passed"] = False
 
-
-    except Exception as e:
-        execution_result["compilation_success"] = False
-        execution_result["compilation_error"] = f"Execution error: {str(e)}"
 
 
     finally:
@@ -219,6 +228,10 @@ def execute_code_and_tests(file_path, language, test_dataset, index=0):
                     for f in os.listdir(pycache_dir):
                         os.remove(os.path.join(pycache_dir, f))
                     os.rmdir(pycache_dir)
+            elif language == "JavaScript":
+                for f in os.listdir(dir_path):
+                    if f.endswith('.js'):
+                        os.remove(os.path.join(dir_path, f))
         except Exception as e:
             print(f"Warning: Failed to clean up some files: {str(e)}")
 

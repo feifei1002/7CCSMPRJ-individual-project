@@ -11,7 +11,7 @@ from src.llm_prompts import (
     StepByStepPromptWithLLMGeneratedTests
 )
 from src.tests_prompts import GenerateTestCasesPromptPython, GenerateTestCasesPromptJava, \
-    GenerateTestCasesPromptJavaScript
+    GenerateTestCasesPromptJavaScript, GenerateTestCasesPromptCPP
 from src.dataset_translator import DatasetTestTranslator
 from src.llm_test_translator import LLMTestTranslator
 
@@ -25,13 +25,13 @@ def run_dataset_translation():
         "DeepSeek": DeepseekLLM()
     }
     prompt_strategies = [
-        # NoTestPrompt,
+        NoTestPrompt,
         InitialPromptWithProvidedTests,
-        # TestFirstPromptWithProvidedTests,
-        # StepByStepPromptWithProvidedTests
+        TestFirstPromptWithProvidedTests,
+        StepByStepPromptWithProvidedTests
     ]
 
-    translator = DatasetTestTranslator("Java", "Python", llm_models, prompt_strategies)
+    translator = DatasetTestTranslator("Java", "JavaScript", llm_models, prompt_strategies)
     translator.translate()
 
 
@@ -45,16 +45,17 @@ def run_llm_test_translation():
     }
     prompt_strategies = [
         InitialPromptWithLLMGeneratedTests,
-        # TestFirstPromptWithLLMGeneratedTests,
-        # StepByStepPromptWithLLMGeneratedTests
+        TestFirstPromptWithLLMGeneratedTests,
+        StepByStepPromptWithLLMGeneratedTests
     ]
     test_gen_prompts = {
         "Python": GenerateTestCasesPromptPython,
         "Java": GenerateTestCasesPromptJava,
-        "JavaScript": GenerateTestCasesPromptJavaScript
+        "JavaScript": GenerateTestCasesPromptJavaScript,
+        # "C++": GenerateTestCasesPromptCPP,
     }
 
-    translator = LLMTestTranslator("Java", "Python", llm_models, prompt_strategies, test_gen_prompts)
+    translator = LLMTestTranslator("Java", "JavaScript", llm_models, prompt_strategies, test_gen_prompts)
     translator.translate()
 
 def run_multi_llm_test_translation():
@@ -74,16 +75,17 @@ def run_multi_llm_test_translation():
     }
     prompt_strategies = [
         InitialPromptWithLLMGeneratedTests,
-        # TestFirstPromptWithLLMGeneratedTests,
-        # StepByStepPromptWithLLMGeneratedTests
+        TestFirstPromptWithLLMGeneratedTests,
+        StepByStepPromptWithLLMGeneratedTests
     ]
     test_gen_prompts = {
         "Python": GenerateTestCasesPromptPython,
         "Java": GenerateTestCasesPromptJava,
-        "JavaScript": GenerateTestCasesPromptJavaScript
+        "JavaScript": GenerateTestCasesPromptJavaScript,
+        # "C++": GenerateTestCasesPromptCPP,
     }
 
-    translator = MultiLLMTestTranslator("Java", "Python", translation_llm_models, test_generation_llm_models, prompt_strategies, test_gen_prompts)
+    translator = MultiLLMTestTranslator("Java", "JavaScript", translation_llm_models, test_generation_llm_models, prompt_strategies, test_gen_prompts)
     translator.translate()
 
 

@@ -10,10 +10,12 @@ LANGUAGE_MAP = {
     "Python": "python",
     "Java": "java",
     "JavaScript": "js",
+    "C++": "cpp",
 }
 
 FILE_EXTENSION = {
     "Python": "py",
     "Java": "java",
     "JavaScript": "js",
+    "C++": "cpp",
 }

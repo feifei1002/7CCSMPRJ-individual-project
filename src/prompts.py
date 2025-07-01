@@ -6,10 +6,10 @@ class BasePrompt:
 class NoTestPrompt(BasePrompt):
     SYSTEM_PROMPT = (
         "You are a code translation assistant focused on test-driven development (TDD). "
-        "Your goal is to translate {source_language} code to {target_language} accurately."
+        "Your objective is to translate {source_language} code to {target_language} accurately."
     )
     USER_PROMPT = (
-        "Translate the following {source_language} code to {target_language} while ensuring it passes the provided test cases.\n\n "
+        "Translate the following {source_language} code to {target_language}.\n\n "
         "{source_language} code:"
         "{source_declaration}\n"
         "\n{code}\n\n"
@@ -80,7 +80,7 @@ class TestFirstPromptWithProvidedTests(BasePrompt):
 
 class StepByStepPromptWithProvidedTests(BasePrompt):
     SYSTEM_PROMPT = (
-        "You are a code translation assistant who who uses a step-by-step approach and follows test-driven development (TDD). "
+        "You are a code translation assistant who uses a step-by-step approach and follows test-driven development (TDD). "
         "Your objective is to translate {source_language} code into {target_language} code accurately and passes all provided test cases. "
         "You verify each step before proceeding to ensure correctness."
     )
