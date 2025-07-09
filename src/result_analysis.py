@@ -138,12 +138,17 @@ def save_table_as_image(result_table, filename):
     strategy_name = os.path.basename(filename).replace('_results.png', '').replace('_', ' ')
     plt.title(strategy_name, fontsize=12, fontweight='bold', fontfamily='Arial', pad=1)
 
+    # Calculate dynamic column widths based on number of columns
+    num_columns = len(table_data[0])
+    # First two columns (Direction and Strategy) get more width
+    col_widths = [0.2, 0.2] + [0.6 / (num_columns - 2)] * (num_columns - 2)
+
     # Create table
     result_table = ax.table(cellText=table_data,
                             cellLoc='center',
                             loc='center',
                             bbox=[0, -0.05, 1, 1], # Adjust table position up
-                            colWidths=[0.2, 0.15, 0.15, 0.15, 0.15, 0.1, 0.1])
+                            colWidths=col_widths)
 
     # Adjust table properties
     result_table.auto_set_font_size(False)
@@ -151,7 +156,8 @@ def save_table_as_image(result_table, filename):
     result_table.scale(1.2, 1)
 
     for pos, cell in result_table._cells.items():
-        cell.set_facecolor('none')
+        cell.set_facecolor('white')
+        # cell.set_facecolor('none')
         if pos[0] == 0:
             cell.set_text_props(fontfamily='Arial', fontsize=9, weight='bold', color='black')
         else:
@@ -160,6 +166,52 @@ def save_table_as_image(result_table, filename):
     plt.savefig(filename, bbox_inches='tight', dpi=300, pad_inches=0.01)
     plt.close()
 
+
+def create_combined_summary_table(results):
+    # Create table
+    summary_table = PrettyTable()
+
+    # Get unique LLMs for column headers
+    llms = sorted(list(set(result['model'] for result in results)))
+
+    # Set up field names with subcolumns for each LLM
+    field_names = ["Direction", "Prompt Strategy"]
+    for llm in llms:
+        field_names.extend([f"{llm}\nComp%", f"{llm}\nTest%"])
+
+    summary_table.field_names = field_names
+
+    # Group results by direction and strategy
+    grouped_results = {}
+    for result in results:
+        key = (result['direction'], result['strategy'])
+        if key not in grouped_results:
+            grouped_results[key] = {}
+        grouped_results[key][result['model']] = {
+            'compile_rate': result['success_rate'],
+            'test_rate': result['test_pass_rate']
+        }
+
+    # Sort keys for consistent display
+    sorted_keys = sorted(grouped_results.keys())
+
+    # Add rows to table
+    for direction, strategy in sorted_keys:
+        row = [direction, strategy]
+        for llm in llms:
+            rates = grouped_results.get((direction, strategy), {}).get(llm, {})
+            row.append(f"{rates.get('compile_rate', 0):.2f}")
+            row.append(f"{rates.get('test_rate', 0):.2f}")
+        summary_table.add_row(row)
+
+    print("\nSummary of Results (Compilation % and Test Pass %):")
+    print(summary_table)
+
+    # Save table as image
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, '..', 'tables')
+    summary_filename = os.path.join(output_dir, 'combined_summary.png')
+    save_table_as_image(summary_table, summary_filename)
 
 # Main execution code
 def main():
@@ -245,6 +297,8 @@ def main():
         safe_direction = direction.title()
         image_filename = os.path.join(output_dir, f'{safe_strategy_name}_{safe_direction}_results.png')
         save_table_as_image(table, image_filename)
+
+    create_combined_summary_table(results)
 
 if __name__ == '__main__':
     main()

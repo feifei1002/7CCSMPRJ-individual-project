@@ -12,10 +12,7 @@ class BasePrompt:
                 "import org.junit.jupiter.api.Test;\n"
                 "import static org.junit.jupiter.api.Assertions.*;\n\n"
                 "public class #CLASS_NAME {\n"
-                "    // Your test methods here\n"
-                # "    // Each test method should:\n"
-                # "    // - Use @Test annotation\n"
-                # "    // - Use assertions (assertEquals, assertTrue, etc.)\n"
+                "    // Test methods here\n"
                 "}\n"
                 "TEST_END"
             )
@@ -26,11 +23,7 @@ class BasePrompt:
                 "import unittest\n"
                 "from solution import *\n\n"
                 "class TestSolution(unittest.TestCase):\n"
-                "    # Your test methods here\n"
-                # "    # Each test method should:\n"
-                # "    # - Start with 'test_'\n"
-                # "    # - Be properly indented (4 spaces)\n"
-                # "    # - Use unittest assertions (assertEqual, assertTrue, etc.)\n\n"
+                "    # Test methods here\n"
                 "if __name__ == '__main__':\n"
                 "    unittest.main()\n"
                 "TEST_END"
@@ -42,28 +35,13 @@ class BasePrompt:
                 "const { describe, test, expect } = require('@jest/globals');\n"
                 "const solution = require('./solution');\n\n"
                 "describe('Solution Tests', () => {\n"
-                "    // Your test methods here\n"
+                "    // Test cases here\n"
                 "});\n"
-                "TEST_END"
-            )
-        elif target_language == "C++":
-            return (
-                "Return the translated tests in this structure:\n"
-                "TEST_BEGIN\n"
-                "#include <gtest/gtest.h>\n"
-                "#include \"solution.h\"\n\n"
-                "TEST(SolutionTest, BasicTests) {\n"
-                "    // Your test methods here\n"
-                "}\n\n"
-                "int main(int argc, char **argv) {\n"
-                "    ::testing::InitGoogleTest(&argc, argv);\n"
-                "    return RUN_ALL_TESTS();\n"
-                "}\n"
                 "TEST_END"
             )
         return ""
 
-class InitialPromptWithLLMGeneratedTests(BasePrompt):
+class BasicPromptWithLLMGeneratedTests(BasePrompt):
     SYSTEM_PROMPT = (
         "You are a code translation assistant focused on test-driven development (TDD). "
         "Your objective is to translate {source_language} code to {target_language} accurately and passes all test cases. "
@@ -90,11 +68,11 @@ class InitialPromptWithLLMGeneratedTests(BasePrompt):
     def prompt(context):
         test_template = BasePrompt.get_test_framework_instructions(context["target_language"])
         return [
-            {"role": "system", "content": InitialPromptWithLLMGeneratedTests.SYSTEM_PROMPT.format(
+            {"role": "system", "content": BasicPromptWithLLMGeneratedTests.SYSTEM_PROMPT.format(
                 source_language=context["source_language"],
                 target_language=context["target_language"],
             )},
-            {"role": "user", "content": InitialPromptWithLLMGeneratedTests.USER_PROMPT.format(
+            {"role": "user", "content": BasicPromptWithLLMGeneratedTests.USER_PROMPT.format(
                 **context, test_template=test_template)}
         ]
 

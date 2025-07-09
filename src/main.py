@@ -1,12 +1,12 @@
 from src.llms import DeepseekLLM, MistralLLM, OpenAILLM, ClaudeLLM, GeminiLLM
 from src.multi_llm_test_translator import MultiLLMTestTranslator
 from src.prompts import (
-    InitialPromptWithProvidedTests,
+    BasicPromptWithProvidedTests,
     TestFirstPromptWithProvidedTests,
     StepByStepPromptWithProvidedTests, NoTestPrompt
 )
 from src.llm_prompts import (
-    InitialPromptWithLLMGeneratedTests,
+    BasicPromptWithLLMGeneratedTests,
     TestFirstPromptWithLLMGeneratedTests,
     StepByStepPromptWithLLMGeneratedTests
 )
@@ -18,24 +18,24 @@ from src.llm_test_translator import LLMTestTranslator
 
 def run_dataset_translation():
     llm_models = {
-        # "Mistral": MistralLLM(),
-        # "OpenAI": OpenAILLM(),
-        # "Claude": ClaudeLLM(),
-        # "Gemini": GeminiLLM(),
+        "Mistral": MistralLLM(),
+        "OpenAI": OpenAILLM(),
+        "Claude": ClaudeLLM(),
+        "Gemini": GeminiLLM(),
         "DeepSeek": DeepseekLLM()
     }
     prompt_strategies = [
         NoTestPrompt,
-        InitialPromptWithProvidedTests,
+        BasicPromptWithProvidedTests,
         TestFirstPromptWithProvidedTests,
         StepByStepPromptWithProvidedTests
     ]
 
-    translator = DatasetTestTranslator("Java", "JavaScript", llm_models, prompt_strategies)
+    translator = DatasetTestTranslator("Java", "Python", llm_models, prompt_strategies)
     translator.translate()
 
 
-def run_llm_test_translation():
+def run_llm_test_translation(num_tests=10):
     llm_models = {
         # "Mistral": MistralLLM(),
         # "OpenAI": OpenAILLM(),
@@ -44,7 +44,7 @@ def run_llm_test_translation():
         "DeepSeek": DeepseekLLM()
     }
     prompt_strategies = [
-        InitialPromptWithLLMGeneratedTests,
+        BasicPromptWithLLMGeneratedTests,
         TestFirstPromptWithLLMGeneratedTests,
         StepByStepPromptWithLLMGeneratedTests
     ]
@@ -52,40 +52,36 @@ def run_llm_test_translation():
         "Python": GenerateTestCasesPromptPython,
         "Java": GenerateTestCasesPromptJava,
         "JavaScript": GenerateTestCasesPromptJavaScript,
-        # "C++": GenerateTestCasesPromptCPP,
     }
 
-    translator = LLMTestTranslator("Java", "JavaScript", llm_models, prompt_strategies, test_gen_prompts)
+    translator = LLMTestTranslator("Java", "Python", llm_models, prompt_strategies, test_gen_prompts, num_tests=num_tests)
     translator.translate()
 
-def run_multi_llm_test_translation():
+def run_multi_llm_test_translation(num_tests=10):
     translation_llm_models = {
-        "Mistral": MistralLLM(),
-        # "OpenAI": OpenAILLM(),
-        # "Claude": ClaudeLLM(),
-        # "Gemini": GeminiLLM(),
-        # "DeepSeek": DeepseekLLM()
-    }
-    test_generation_llm_models = {
         # "Mistral": MistralLLM(),
         # "OpenAI": OpenAILLM(),
         # "Claude": ClaudeLLM(),
         # "Gemini": GeminiLLM(),
         "DeepSeek": DeepseekLLM()
     }
+    test_generation_llm_models = {
+        "Mistral": MistralLLM(),
+        # "OpenAI": OpenAILLM(),
+        # "Claude": ClaudeLLM(),
+        # "Gemini": GeminiLLM(),
+        # "DeepSeek": DeepseekLLM()
+    }
     prompt_strategies = [
-        InitialPromptWithLLMGeneratedTests,
-        TestFirstPromptWithLLMGeneratedTests,
-        StepByStepPromptWithLLMGeneratedTests
+        BasicPromptWithLLMGeneratedTests,
     ]
     test_gen_prompts = {
         "Python": GenerateTestCasesPromptPython,
         "Java": GenerateTestCasesPromptJava,
         "JavaScript": GenerateTestCasesPromptJavaScript,
-        # "C++": GenerateTestCasesPromptCPP,
     }
 
-    translator = MultiLLMTestTranslator("Java", "JavaScript", translation_llm_models, test_generation_llm_models, prompt_strategies, test_gen_prompts)
+    translator = MultiLLMTestTranslator("Java", "Python", translation_llm_models, test_generation_llm_models, prompt_strategies, test_gen_prompts, num_tests=num_tests)
     translator.translate()
 
 

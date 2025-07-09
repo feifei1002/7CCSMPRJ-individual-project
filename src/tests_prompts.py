@@ -1,6 +1,6 @@
 class TestBasePrompt:
     @staticmethod
-    def prompt(context):
+    def prompt(context, num_tests=5):
         raise NotImplementedError
 
 class GenerateTestCasesPromptJava(TestBasePrompt):
@@ -10,7 +10,7 @@ class GenerateTestCasesPromptJava(TestBasePrompt):
     )
 
     USER_PROMPT = (
-        "Write exactly 5 test cases for the following Java code in JUnit 5. "
+        "Write exactly {num_tests} test cases for the following Java code in JUnit 5. "
         "Ensure that the tests cover all edge cases and functionalities. "
         "Java code:\n"
         "\n{code}\n"
@@ -18,10 +18,11 @@ class GenerateTestCasesPromptJava(TestBasePrompt):
     )
 
     @staticmethod
-    def prompt(context):
+    def prompt(context, num_tests=5):
+        context_with_num_tests = {**context, 'num_tests': num_tests}
         return [
             {"role": "system", "content": GenerateTestCasesPromptJava.SYSTEM_PROMPT},
-            {"role": "user", "content": GenerateTestCasesPromptJava.USER_PROMPT.format(**context)}
+            {"role": "user", "content": GenerateTestCasesPromptJava.USER_PROMPT.format(**context_with_num_tests)}
         ]
 
 class GenerateTestCasesPromptPython(TestBasePrompt):
@@ -31,7 +32,7 @@ class GenerateTestCasesPromptPython(TestBasePrompt):
     )
 
     USER_PROMPT = (
-        "Write exactly 5 test cases for the following Python code in unittest. "
+        "Write exactly {num_tests} test cases for the following Python code in unittest. "
         "Ensure that the tests cover all edge cases and functionalities. "
         "Python code:\n"
         "\n{code}\n"
@@ -39,10 +40,11 @@ class GenerateTestCasesPromptPython(TestBasePrompt):
     )
 
     @staticmethod
-    def prompt(context):
+    def prompt(context, num_tests=5):
+        context_with_num_tests = {**context, 'num_tests': num_tests}
         return [
             {"role": "system", "content": GenerateTestCasesPromptPython.SYSTEM_PROMPT},
-            {"role": "user", "content": GenerateTestCasesPromptPython.USER_PROMPT.format(**context)}
+            {"role": "user", "content": GenerateTestCasesPromptPython.USER_PROMPT.format(**context_with_num_tests)}
         ]
 
 class GenerateTestCasesPromptJavaScript(TestBasePrompt):
@@ -52,7 +54,7 @@ class GenerateTestCasesPromptJavaScript(TestBasePrompt):
     )
 
     USER_PROMPT = (
-        "Write exactly 5 test cases for the following Java code in Jest. "
+        "Write exactly {num_tests} test cases for the following Java code in Jest. "
         "Ensure that the tests cover all edge cases and functionalities. "
         "Java code:\n"
         "\n{code}\n"
@@ -60,10 +62,11 @@ class GenerateTestCasesPromptJavaScript(TestBasePrompt):
     )
 
     @staticmethod
-    def prompt(context):
+    def prompt(context, num_tests=5):
+        context_with_num_tests = {**context, 'num_tests': num_tests}
         return [
             {"role": "system", "content": GenerateTestCasesPromptJavaScript.SYSTEM_PROMPT},
-            {"role": "user", "content": GenerateTestCasesPromptJavaScript.USER_PROMPT.format(**context)}
+            {"role": "user", "content": GenerateTestCasesPromptJavaScript.USER_PROMPT.format(**context_with_num_tests)}
         ]
 
 class GenerateTestCasesPromptCPP(TestBasePrompt):

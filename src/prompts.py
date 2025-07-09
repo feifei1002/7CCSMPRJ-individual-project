@@ -27,7 +27,7 @@ class NoTestPrompt(BasePrompt):
             {"role": "user", "content": NoTestPrompt.USER_PROMPT.format(**context)}
         ]
 
-class InitialPromptWithProvidedTests(BasePrompt):
+class BasicPromptWithProvidedTests(BasePrompt):
     SYSTEM_PROMPT = (
         "You are a code translation assistant focused on test-driven development (TDD). "
         "Your objective is to translate {source_language} code into {target_language} accurately and passes all provided test cases. "
@@ -39,18 +39,18 @@ class InitialPromptWithProvidedTests(BasePrompt):
         "{source_declaration}\n"
         "\n{code}\n\n"
         "{target_language} test cases:\n\n{test_cases}\n\n"
-        "{target_declaration}\n    # INSERT TRANSLATED CODE HERE\n\n"
+        "{target_declaration}\n   # METHOD BODY OF TRANSLATED CODE WOULD BE HERE\n"
         "Return only the translated code without additional comments or explanations."
     )
 
     @staticmethod
     def prompt(context):
         return [
-            {"role": "system", "content": InitialPromptWithProvidedTests.SYSTEM_PROMPT.format(
+            {"role": "system", "content": BasicPromptWithProvidedTests.SYSTEM_PROMPT.format(
                 source_language=context["source_language"],
                 target_language=context["target_language"]
             )},
-            {"role": "user", "content": InitialPromptWithProvidedTests.USER_PROMPT.format(**context)}
+            {"role": "user", "content": BasicPromptWithProvidedTests.USER_PROMPT.format(**context)}
         ]
 
 class TestFirstPromptWithProvidedTests(BasePrompt):

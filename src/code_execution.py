@@ -16,7 +16,7 @@ def execute_code_and_tests(file_path: str, language: str, test_dataset: list, in
         "output": "",
         "test_stats": f"0/0"
     }
-
+    dir_path = os.path.dirname(file_path)
     try:
         if language == "Python":
 
@@ -28,7 +28,7 @@ def execute_code_and_tests(file_path: str, language: str, test_dataset: list, in
                 execution_result["compilation_error"] = p.stderr.strip()
                 return execution_result
 
-            dir_path = os.path.dirname(file_path)
+            # dir_path = os.path.dirname(file_path)
 
             if "solution.py" in file_path:
                 try:
@@ -46,7 +46,10 @@ def execute_code_and_tests(file_path: str, language: str, test_dataset: list, in
                     os.chdir(current_dir)
 
                     output = p.stdout + p.stderr
-                    failures = output.count('FAILED')
+                    total_tests = len(re.findall(r'test_.*\s\(.*\)\s\.{3}\s', output))
+                    failed_tests = len(re.findall(r'FAIL: test_.*\s\(.*\)', output))
+                    error_tests = len(re.findall(r'ERROR: test_.*\s\(.*\)', output))
+                    passed_tests = total_tests - (failed_tests + error_tests)
                     # Count total tests from test_cases.py
                     with open(os.path.join(dir_path, "test_cases.py"), "r") as f:
                         test_content = f.read()
@@ -54,10 +57,9 @@ def execute_code_and_tests(file_path: str, language: str, test_dataset: list, in
                                  if line.strip().startswith('def test_')])
                     execution_result["test_stats"] = f"0/{test_count}"
 
-                    passed = test_count - failures
                     execution_result["results"] = output
-                    execution_result["test_stats"] = f"{passed}/{test_count}"
-                    execution_result["tests_passed"] = passed == test_count
+                    execution_result["test_stats"] = f"{passed_tests}/{test_count}"
+                    execution_result["tests_passed"] = passed_tests == test_count
                     execution_result["compilation_success"] = True
                     if not execution_result["tests_passed"]:
                         execution_result["test_error"] = p.stderr.strip() if p.stderr else p.stdout
