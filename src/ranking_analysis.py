@@ -133,8 +133,14 @@ class RankingAnalysis:
                 if llm_count > 1:  # Skip collaboration files
                     continue
 
+                test_count = self._extract_test_count(filename)
+                if test_count is None:  # Skip files without test count numbers
+                    continue
+
                 strategy_name = filename.split('_')[0]
                 model_name = filename.split('_')[1].replace('.txt', '')
+
+                test_count = self._extract_test_count(filename)
 
                 filepath = os.path.join(results_dir, filename)
                 success_rate, test_pass_rate = self._calculate_rates(filepath)
@@ -142,7 +148,8 @@ class RankingAnalysis:
                 self.results[direction][model_name].append({
                     'strategy': strategy_name,
                     'success_rate': success_rate,
-                    'test_pass_rate': test_pass_rate
+                    'test_pass_rate': test_pass_rate,
+                    'test_count': test_count,
                 })
 
     def analyze_collaboration_results(self, results_dir: str) -> None:
@@ -625,6 +632,285 @@ class RankingAnalysis:
                 report_dir
             )
 
+    def _extract_test_count(self, filename: str) -> Optional[int]:
+        """Extract test count from filename, default to 5 if not found"""
+        import re
+
+        # Look for pattern like "_10.txt" or "_15.txt"
+        match = re.search(r'_(\d+)\.txt$', filename)
+        if match:
+            return int(match.group(1))
+
+        return None
+
+
+    def create_test_count_trend_analysis(self, report_dir: str) -> None:
+        """Create line charts showing performance trends by test count"""
+
+        # Group results by test count
+        test_count_results = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        for direction, direction_data in self.results.items():
+            for model, model_results in direction_data.items():
+                for result in model_results:
+                    test_count = result.get('test_count', 5)
+                    test_count_results[direction][model][test_count].append(result)
+
+        # Create trend charts for each direction
+        for direction in test_count_results.keys():
+            plt.figure(figsize=(12, 8))
+
+            for model in self.llm_names:
+                if model in test_count_results[direction]:
+                    test_counts = []
+                    success_rates = []
+                    test_pass_rates = []
+
+                    for test_count in sorted(test_count_results[direction][model].keys()):
+                        results = test_count_results[direction][model][test_count]
+                        avg_success = sum(r['success_rate'] for r in results) / len(results)
+                        avg_test_pass = sum(r['test_pass_rate'] for r in results) / len(results)
+
+                        test_counts.append(test_count)
+                        success_rates.append(avg_success)
+                        test_pass_rates.append(avg_test_pass)
+
+                    # Plot lines for each model
+                    plt.plot(test_counts, success_rates, marker='o', label=f'{model} (Compile)',
+                             linestyle='-', linewidth=2, markersize=6)
+                    plt.plot(test_counts, test_pass_rates, marker='s', label=f'{model} (Test Pass)',
+                             linestyle='--', linewidth=2, markersize=6)
+
+            plt.xlabel('Number of Test Cases', fontfamily='Arial', weight='bold', fontsize=12)
+            plt.ylabel('Success Rate (%)', fontfamily='Arial', weight='bold', fontsize=12)
+            plt.title(f'Performance vs Test Count - {direction.replace("_", " ").title()}',
+                      fontfamily='Arial', weight='bold', fontsize=14, pad=20)
+            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', prop={'family': 'Arial'})
+            plt.grid(True, alpha=0.3)
+            plt.ylim(0, 100)
+
+            # Ensure x-axis shows all test counts
+            all_test_counts = set()
+            for model_data in test_count_results[direction].values():
+                all_test_counts.update(model_data.keys())
+            plt.xticks(sorted(all_test_counts))
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(report_dir, f'test_count_trends_{direction}.png'),
+                        bbox_inches='tight', dpi=300)
+            plt.close()
+
+    def create_overall_test_count_analysis(self, report_dir: str) -> None:
+        """Create overall test count analysis across all directions"""
+
+        # Aggregate data across all directions
+        overall_test_data = defaultdict(lambda: defaultdict(lambda: {'success': [], 'test_pass': []}))
+
+        for direction_data in self.results.values():
+            for model, model_results in direction_data.items():
+                for result in model_results:
+                    test_count = result.get('test_count', 5)
+                    overall_test_data[model][test_count]['success'].append(result['success_rate'])
+                    overall_test_data[model][test_count]['test_pass'].append(result['test_pass_rate'])
+
+        # Create overall trend chart
+        plt.figure(figsize=(14, 8))
+
+        for model in self.llm_names:
+            if model in overall_test_data:
+                test_counts = []
+                avg_success_rates = []
+                avg_test_pass_rates = []
+
+                for test_count in sorted(overall_test_data[model].keys()):
+                    data = overall_test_data[model][test_count]
+
+                    test_counts.append(test_count)
+                    avg_success_rates.append(np.mean(data['success']))
+                    avg_test_pass_rates.append(np.mean(data['test_pass']))
+
+                plt.plot(test_counts, avg_success_rates, marker='o', label=f'{model} (Compile)',
+                         linestyle='-', linewidth=3, markersize=8)
+                plt.plot(test_counts, avg_test_pass_rates, marker='s', label=f'{model} (Test Pass)',
+                         linestyle='--', linewidth=3, markersize=8)
+
+        plt.xlabel('Number of Test Cases', fontfamily='Arial', weight='bold', fontsize=14)
+        plt.ylabel('Average Success Rate (%)', fontfamily='Arial', weight='bold', fontsize=14)
+        plt.title('Overall Performance vs Test Count (All Language Pairs)',
+                  fontfamily='Arial', weight='bold', fontsize=16, pad=20)
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', prop={'family': 'Arial', 'size': 12})
+        plt.grid(True, alpha=0.3)
+        plt.ylim(0, 100)
+
+        # Get all unique test counts for x-axis
+        all_test_counts = set()
+        for model_data in overall_test_data.values():
+            all_test_counts.update(model_data.keys())
+        plt.xticks(sorted(all_test_counts))
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(report_dir, 'overall_test_count_trends.png'),
+                    bbox_inches='tight', dpi=300)
+        plt.close()
+
+    def analyze_test_count_impact(self) -> str:
+        """Generate statistical analysis of test count impact"""
+
+        report = "Test Count Impact Analysis\n"
+        report += "=========================\n\n"
+
+        test_count_stats = defaultdict(lambda: defaultdict(list))
+
+        for direction_data in self.results.values():
+            for model_results in direction_data.values():
+                for result in model_results:
+                    test_count = result.get('test_count', 5)
+                    test_count_stats[test_count]['success'].append(result['success_rate'])
+                    test_count_stats[test_count]['test_pass'].append(result['test_pass_rate'])
+
+
+        # # Find optimal test count
+        # best_test_count = max(test_count_stats.keys(),
+        #                       key=lambda x: np.mean(test_count_stats[x]['success']))
+        #
+        # report += f"Optimal Test Count Analysis:\n"
+        # report += f"- Highest average compile success rate: {best_test_count} test cases\n"
+        # report += f"- Average success rate: {np.mean(test_count_stats[best_test_count]['success']):.2f}%\n\n"
+
+        # Overall summary table
+        report += "Test Count Performance by Model (All Language Pairs)\n"
+        report += "===================================================\n\n"
+
+        for model in sorted(self.llm_names):
+            model_test_stats = defaultdict(lambda: defaultdict(list))
+
+            for direction_data in self.results.values():
+                if model in direction_data:
+                    for result in direction_data[model]:
+                        test_count = result.get('test_count', 5)
+                        model_test_stats[test_count]['success'].append(result['success_rate'])
+                        model_test_stats[test_count]['test_pass'].append(result['test_pass_rate'])
+
+            if model_test_stats:
+                full_model_name = self.model_mapping.get(model, model)
+                report += f"{model} ({full_model_name}):\n"
+                report += "-" * (len(model) + len(full_model_name) + 4) + "\n"
+
+                model_table = PrettyTable()
+                model_table.field_names = ["Test Count", "Avg Success %", "Std Success", "Avg Test Pass %",
+                                           "Std Test Pass", "Sample Size"]
+
+                for test_count in sorted(model_test_stats.keys()):
+                    success_rates = model_test_stats[test_count]['success']
+                    test_rates = model_test_stats[test_count]['test_pass']
+
+                    model_table.add_row([
+                        test_count,
+                        f"{np.mean(success_rates):.2f}",
+                        f"{np.std(success_rates):.2f}",
+                        f"{np.mean(test_rates):.2f}",
+                        f"{np.std(test_rates):.2f}",
+                        len(success_rates)
+                    ])
+
+                report += str(model_table) + "\n"
+
+                # Find optimal test count for this model across all language pairs
+                model_best_count = max(model_test_stats.keys(),
+                                       key=lambda x: np.mean(model_test_stats[x]['success']))
+                best_success_rate = np.mean(model_test_stats[model_best_count]['success'])
+                report += f"Optimal for {model}: {model_best_count} test cases "
+                report += f"(Avg Success: {best_success_rate:.2f}%)\n\n"
+
+
+
+
+        # Per-language-pair analysis with per-model breakdown
+        report += "Test Count Performance by Language Pair and Model\n"
+        report += "================================================\n\n"
+
+        for direction in sorted(self.results.keys()):
+            report += f"{direction.replace('_', ' ').title()}\n"
+            report += "=" * len(direction.replace('_', ' ').title()) + "\n\n"
+
+            # Overall direction summary
+            direction_test_stats = defaultdict(lambda: defaultdict(list))
+            for model_results in self.results[direction].values():
+                for result in model_results:
+                    test_count = result.get('test_count', 5)
+                    direction_test_stats[test_count]['success'].append(result['success_rate'])
+                    direction_test_stats[test_count]['test_pass'].append(result['test_pass_rate'])
+
+            if direction_test_stats:
+                report += "Overall Direction Summary:\n"
+                report += "-" * 25 + "\n"
+
+                direction_table = PrettyTable()
+                direction_table.field_names = ["Test Count", "Avg Success %", "Std Success", "Avg Test Pass %",
+                                               "Std Test Pass", "Sample Size"]
+
+                for test_count in sorted(direction_test_stats.keys()):
+                    success_rates = direction_test_stats[test_count]['success']
+                    test_rates = direction_test_stats[test_count]['test_pass']
+
+                    direction_table.add_row([
+                        test_count,
+                        f"{np.mean(success_rates):.2f}",
+                        f"{np.std(success_rates):.2f}",
+                        f"{np.mean(test_rates):.2f}",
+                        f"{np.std(test_rates):.2f}",
+                        len(success_rates)
+                    ])
+
+                report += str(direction_table) + "\n\n"
+
+                # Find optimal test count for this direction
+                direction_best_count = max(direction_test_stats.keys(),
+                                           key=lambda x: np.mean(direction_test_stats[x]['success']))
+                best_success_rate = np.mean(direction_test_stats[direction_best_count]['success'])
+                report += f"Optimal for {direction.replace('_', ' ').title()}: {direction_best_count} test cases "
+                report += f"(Avg Success: {best_success_rate:.2f}%)\n\n"
+
+            # Per-model breakdown for this direction
+            report += "Per-Model Breakdown:\n"
+            report += "-" * 20 + "\n\n"
+
+            for model in sorted(self.results[direction].keys()):
+                model_test_stats = defaultdict(lambda: defaultdict(list))
+
+                for result in self.results[direction][model]:
+                    test_count = result.get('test_count', 5)
+                    model_test_stats[test_count]['success'].append(result['success_rate'])
+                    model_test_stats[test_count]['test_pass'].append(result['test_pass_rate'])
+
+                if model_test_stats:
+                    full_model_name = self.model_mapping.get(model, model)
+                    report += f"{model} ({full_model_name}):\n"
+                    report += "~" * (len(model) + len(full_model_name) + 4) + "\n"
+
+                    model_table = PrettyTable()
+                    model_table.field_names = ["Test Count", "Avg Success %", "Std Success", "Avg Test Pass %",
+                                               "Std Test Pass", "Sample Size"]
+
+                    for test_count in sorted(model_test_stats.keys()):
+                        success_rates = model_test_stats[test_count]['success']
+                        test_rates = model_test_stats[test_count]['test_pass']
+
+                        model_table.add_row([
+                            test_count,
+                            f"{np.mean(success_rates):.2f}",
+                            f"{np.std(success_rates):.2f}",
+                            f"{np.mean(test_rates):.2f}",
+                            f"{np.std(test_rates):.2f}",
+                            len(success_rates)
+                        ])
+
+                    report += str(model_table) + "\n"
+
+        return report
+
+
+
 
 def main():
     src_dir = os.path.dirname(os.path.abspath(__file__))
@@ -646,8 +932,10 @@ def main():
     # Generate and save rankings report
     report = analyzer.generate_rankings()
     collaboration_report = analyzer.generate_collaboration_report()
+    test_count_report = analyzer.analyze_test_count_impact()
 
-    full_report = report + "\n" + collaboration_report
+
+    full_report = report + "\n" + collaboration_report + "\n" + test_count_report
 
     report_path = os.path.join(report_dir, 'strategy_rankings.txt')
 
@@ -662,6 +950,8 @@ def main():
     analyzer.create_collaboration_heatmap(report_dir)
     analyzer.create_overall_strategy_visualization(report_dir)
     analyzer.create_strategy_performance_by_llm_visualization(report_dir)
+    analyzer.create_overall_test_count_analysis(report_dir)
+    analyzer.create_test_count_trend_analysis(report_dir)
     print(f"Visualization charts saved in '{report_dir}'")
 
 

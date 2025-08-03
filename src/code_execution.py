@@ -28,7 +28,6 @@ def execute_code_and_tests(file_path: str, language: str, test_dataset: list, in
                 execution_result["compilation_error"] = p.stderr.strip()
                 return execution_result
 
-            # dir_path = os.path.dirname(file_path)
 
             if "solution.py" in file_path:
                 try:

@@ -11,7 +11,7 @@ from src.llm_prompts import (
     StepByStepPromptWithLLMGeneratedTests
 )
 from src.tests_prompts import GenerateTestCasesPromptPython, GenerateTestCasesPromptJava, \
-    GenerateTestCasesPromptJavaScript, GenerateTestCasesPromptCPP
+    GenerateTestCasesPromptJavaScript
 from src.dataset_translator import DatasetTestTranslator
 from src.llm_test_translator import LLMTestTranslator
 
@@ -31,16 +31,16 @@ def run_dataset_translation():
         StepByStepPromptWithProvidedTests
     ]
 
-    translator = DatasetTestTranslator("Java", "Python", llm_models, prompt_strategies)
+    translator = DatasetTestTranslator("Python", "Java", llm_models, prompt_strategies)
     translator.translate()
 
 
-def run_llm_test_translation(num_tests=10):
+def run_llm_test_translation(num_tests=5):
     llm_models = {
-        # "Mistral": MistralLLM(),
-        # "OpenAI": OpenAILLM(),
-        # "Claude": ClaudeLLM(),
-        # "Gemini": GeminiLLM(),
+        "Mistral": MistralLLM(),
+        "OpenAI": OpenAILLM(),
+        "Claude": ClaudeLLM(),
+        "Gemini": GeminiLLM(),
         "DeepSeek": DeepseekLLM()
     }
     prompt_strategies = [
@@ -57,20 +57,20 @@ def run_llm_test_translation(num_tests=10):
     translator = LLMTestTranslator("Java", "Python", llm_models, prompt_strategies, test_gen_prompts, num_tests=num_tests)
     translator.translate()
 
-def run_multi_llm_test_translation(num_tests=10):
+def run_multi_llm_test_translation(num_tests=5):
     translation_llm_models = {
-        # "Mistral": MistralLLM(),
-        # "OpenAI": OpenAILLM(),
-        # "Claude": ClaudeLLM(),
-        # "Gemini": GeminiLLM(),
+        "Mistral": MistralLLM(),
+        "OpenAI": OpenAILLM(),
+        "Claude": ClaudeLLM(),
+        "Gemini": GeminiLLM(),
         "DeepSeek": DeepseekLLM()
     }
     test_generation_llm_models = {
         "Mistral": MistralLLM(),
-        # "OpenAI": OpenAILLM(),
-        # "Claude": ClaudeLLM(),
-        # "Gemini": GeminiLLM(),
-        # "DeepSeek": DeepseekLLM()
+        "OpenAI": OpenAILLM(),
+        "Claude": ClaudeLLM(),
+        "Gemini": GeminiLLM(),
+        "DeepSeek": DeepseekLLM()
     }
     prompt_strategies = [
         BasicPromptWithLLMGeneratedTests,

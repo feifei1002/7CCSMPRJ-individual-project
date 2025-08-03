@@ -39,7 +39,7 @@ class BasicPromptWithProvidedTests(BasePrompt):
         "{source_declaration}\n"
         "\n{code}\n\n"
         "{target_language} test cases:\n\n{test_cases}\n\n"
-        "{target_declaration}\n   # METHOD BODY OF TRANSLATED CODE WOULD BE HERE\n"
+        "{target_declaration}\n   # INSERT TRANSLATED CODE HERE\n"
         "Return only the translated code without additional comments or explanations."
     )
 
